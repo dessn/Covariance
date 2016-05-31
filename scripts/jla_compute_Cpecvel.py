@@ -66,7 +66,7 @@ class VelocityCorrection(object):
         output is vector in galactic cartesian coordinates, in CMB frame
         """
 
-        cz_LG = self.convert_helio_to_LG(self, self.c*z_h, l, b)
+        cz_LG = self.convert_helio_to_LG(self.c*z_h, l, b)
         x = cz_LG * cos_d(l) * cos_d(b)
         y = cz_LG * sin_d(l) * cos_d(b)
         z = cz_LG * sin_d(b)
@@ -77,10 +77,7 @@ class VelocityCorrection(object):
         try:
             vpec = self.velocity_field[:, i, j, k]
         except IndexError:
-            print 'Warning - outside velocity field, retreating to edge ', k
-            k = min(256, k) # approximate at edge
-            vpec = self.velocity_field[:, i, j, k]
-
+            vpec = np.array([0,0,0])#outside velocity field; approximate as zero 
         return vpec
 
     def correct_redshift(self, z_h, vpec, l, b):
@@ -102,12 +99,12 @@ class VelocityCorrection(object):
         for sn in SNe:
             coords = ICRSCoordinates(sn['ra'], sn['dec'])
             gcoords = coords.convert(GalacticCoordinates)
-            vpec = self.lookup_velocity(self, sn['z_helio'], gcoords.l.d, gcoords.b.d)
-            z_c = self.correct_redshift(self, sn['z_helio'], vpec, gcoords.l.d, gcoords.b.d)
+            vpec = self.lookup_velocity(sn['z_helio'], gcoords.l.d, gcoords.b.d)
+            z_c = self.correct_redshift(sn['z_helio'], vpec, gcoords.l.d, gcoords.b.d)
             z_value.append(z_c)
-            z_plus = self.correct_redshift(self, sn['z_helio'], self.r_plus*vpec,
+            z_plus = self.correct_redshift(sn['z_helio'], self.r_plus*vpec,
                                            gcoords.l.d, gcoords.b.d)
-            z_minus = self.correct_redshift(self, sn['z_helio'], self.r_minus*vpec,
+            z_minus = self.correct_redshift(sn['z_helio'], self.r_minus*vpec,
                                             gcoords.l.d, gcoords.b.d)
             z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
 
@@ -124,10 +121,17 @@ class VelocityCorrection(object):
 
         for i in range(nSNe):
             for j in range(i, nSNe):
-                cpecvel[3*i, 3*j] = dmdz(z[i-616])*dmdz(z[j-616]) * z_err[i-616] * z_err[j-616]
+                cpecvel[3*i, 3*j] = dmdz(z[i])*dmdz(z[j]) * z_err[i] * z_err[j]
                 cpecvel[3*j, 3*i] = cpecvel[3*i, 3*j]
 
         return cpecvel
+
+def reindex_SNe(snlist, data):
+    """ list of indices to reindex the data so that it matches the list of SNe """
+    indices = []
+    for sn in snlist:
+        indices.append([i for i in range(len(data)) if data['id'][i] == sn])
+    return indices
 
 if __name__ == '__main__':
 
@@ -136,28 +140,37 @@ if __name__ == '__main__':
     parser.add_option("-c", "--config", dest="config", default="JLA.config",
                       help="Parameter file containing the location of various JLA parameters")
 
-    parser.add_option("-l", "--lcdir", dest="lcdir", default="use_JLA",
+    parser.add_option("-s", "--SNlist", dest="SNlist",
+                      help="List of SNe")
+
+    parser.add_option("-j", "--jla", dest="jla", default=False, action='store_true',
+                      help="Only use the SNe from the JLA sample")
+
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="use_JLA",
                       help="File containing SN light curve fits (formatted as in jla_lcparams.txt)")
 
     (options, args) = parser.parse_args()
 
-    params = JLA.build_dictionary(options.config)
     JLAHOME = os.environ["JLA"]
+    params = JLA.build_dictionary(options.config)
 
-    if options.lcdir == "use_JLA":
-        lcfits = JLAHOME+'/'+params['lightCurveFits']
+    if options.lcfits == "use_JLA":
+        lcfile = JLAHOME+'/'+params['lightCurveFits'] #default is to use jla_lcparams.txt
     else:
-        lcfits = options.lcdir
+        lcfile = options.lcdir
 
-    SN_data = np.genfromtxt(lcfits, skip_header=1, usecols=(0, 1, 2, 18, 19),
+    SN_data = np.genfromtxt(lcfile, skip_header=1, usecols=(0, 1, 2, 18, 19),
                             dtype='S10, f8, f8, f8, f8',
                             names=['id', 'z_CMB', 'z_helio', 'ra', 'dec'])
 
-    if options.lcdir == "use_JLA":
-        SN_data = SN_data[616:] # to use only low-z SNe in JLA only
+    SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
+    SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
 
-    velfld = JLAHOME+'/'+params['velocityField']
-    vel_correction = VelocityCorrection(velfld)
+    SN_indices = reindex_SNe(SN_list, SN_data)
+    SN_data = SN_data[SN_indices]
+
+    velfile = JLAHOME+'/'+params['velocityField']
+    vel_correction = VelocityCorrection(velfile)
     #z_correction = vel_correction.apply(SN_data)
 
     C_pecvel = vel_correction.covmat_pecvel(SN_data)
@@ -165,4 +178,9 @@ if __name__ == '__main__':
     t = time.gmtime(time.time())
     date = '%4d%02d%02d' % (t[0], t[1], t[2])
 
-    pyfits.writeto('C_pecvel_%s.fits' % (date), np.array(C_pecvel), clobber=True)
+    if options.jla:
+        prefix = 'JLA_'
+    else:
+        prefix = ''
+
+    pyfits.writeto('%sC_pecvel_%s.fits' % (prefix,date), np.array(C_pecvel), clobber=True)
