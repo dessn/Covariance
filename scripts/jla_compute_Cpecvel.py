@@ -1,6 +1,8 @@
 # pylint: disable=E1121,E1101
 
-"""Python program to compute C_pecvel for the low-z SNe in JLA sample
+"""Python program to compute C_pecvel
+need to specify the list of SNe and
+lightcurve fit parameters (if not subset of JLA)
 """
 
 import os
@@ -77,7 +79,7 @@ class VelocityCorrection(object):
         try:
             vpec = self.velocity_field[:, i, j, k]
         except IndexError:
-            vpec = np.array([0,0,0])#outside velocity field; approximate as zero 
+            vpec = np.array([0, 0, 0])#outside velocity field; approximate as zero
         return vpec
 
     def correct_redshift(self, z_h, vpec, l, b):
@@ -109,7 +111,7 @@ class VelocityCorrection(object):
             z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
 
         if to_write:
-            np.savetxt('z_CMB_corrected_%s.txt', np.array(z_value))
+            np.savetxt('z_CMB_corrected.txt', np.array(z_value))
         return z_value, z_err
 
 
@@ -146,18 +148,15 @@ if __name__ == '__main__':
     parser.add_option("-j", "--jla", dest="jla", default=False, action='store_true',
                       help="Only use the SNe from the JLA sample")
 
-    parser.add_option("-l", "--lcfits", dest="lcfits", default="use_JLA",
-                      help="File containing SN light curve fits (formatted as in jla_lcparams.txt)")
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
 
     (options, args) = parser.parse_args()
 
     JLAHOME = os.environ["JLA"]
     params = JLA.build_dictionary(options.config)
 
-    if options.lcfits == "use_JLA":
-        lcfile = JLAHOME+'/'+params['lightCurveFits'] #default is to use jla_lcparams.txt
-    else:
-        lcfile = options.lcdir
+    lcfile = JLAHOME + '/' + params[options.lcfits]
 
     SN_data = np.genfromtxt(lcfile, skip_header=1, usecols=(0, 1, 2, 18, 19),
                             dtype='S10, f8, f8, f8, f8',
@@ -183,4 +182,4 @@ if __name__ == '__main__':
     else:
         prefix = ''
 
-    pyfits.writeto('%sC_pecvel_%s.fits' % (prefix,date), np.array(C_pecvel), clobber=True)
+    pyfits.writeto('%sC_pecvel_%s.fits' % (prefix, date), np.array(C_pecvel), clobber=True)
