@@ -1,4 +1,3 @@
-#!/Users/clidman/Science/Programs/Ureka/variants/common/bin/python
 """Python program to compute C_dust for a new SNe
 """
 

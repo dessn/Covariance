@@ -1,4 +1,3 @@
-#!/Users/clidman/Science/Programs/Ureka/variants/common/bin/python
 """
 Python program that adds the individual covariance matrices into a single matrix
 """
