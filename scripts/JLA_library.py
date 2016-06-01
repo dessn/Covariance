@@ -101,7 +101,7 @@ def get_full_path(path):
 
     if '$' in path:
         rootDir=os.environ[path[path.index('$')+1:path.index('/')]]
-        return rootDir+path[path.index('/')+1:]
+        return rootDir+path[path.index('/'):]
     else:
         return path
 
