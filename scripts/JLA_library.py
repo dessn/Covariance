@@ -2,6 +2,7 @@ import subprocess as sp
 import numpy
 import os
 from scipy import interpolate
+import time
 
 class filterCurve:
     """A filter"""
@@ -91,6 +92,9 @@ class components:
                     self.endWave.append(float(entries[6]))
                     self.data.append(numpy.array([float(entry) for entry in entries[7:]]).reshape(self.nPhases[-1],self.nWaveBins[-1],order="F"))
                     
+def get_date():
+    ymd = time.gmtime(time.time())
+    return '%4d%02d%02d' % (ymd[0], ymd[1], ymd[2])
 
 def get_full_path(path):
     """If required, return to the full path"""

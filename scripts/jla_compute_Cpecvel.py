@@ -5,12 +5,12 @@ need to specify the list of SNe and
 lightcurve fit parameters (if not subset of JLA)
 """
 
-import os
 import time
 from optparse import OptionParser
 import numpy as np
-import pyfits
+import astropy.io.fits as fits
 import JLA_library as JLA
+from astropy.table import Table
 
 from astropysics.coords import ICRSCoordinates, GalacticCoordinates
 
@@ -101,12 +101,12 @@ class VelocityCorrection(object):
         for sn in SNe:
             coords = ICRSCoordinates(sn['ra'], sn['dec'])
             gcoords = coords.convert(GalacticCoordinates)
-            vpec = self.lookup_velocity(sn['z_helio'], gcoords.l.d, gcoords.b.d)
-            z_c = self.correct_redshift(sn['z_helio'], vpec, gcoords.l.d, gcoords.b.d)
+            vpec = self.lookup_velocity(sn['zhel'], gcoords.l.d, gcoords.b.d)
+            z_c = self.correct_redshift(sn['zhel'], vpec, gcoords.l.d, gcoords.b.d)
             z_value.append(z_c)
-            z_plus = self.correct_redshift(sn['z_helio'], self.r_plus*vpec,
+            z_plus = self.correct_redshift(sn['zhel'], self.r_plus*vpec,
                                            gcoords.l.d, gcoords.b.d)
-            z_minus = self.correct_redshift(sn['z_helio'], self.r_minus*vpec,
+            z_minus = self.correct_redshift(sn['zhel'], self.r_minus*vpec,
                                             gcoords.l.d, gcoords.b.d)
             z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
 
@@ -132,7 +132,7 @@ def reindex_SNe(snlist, data):
     """ list of indices to reindex the data so that it matches the list of SNe """
     indices = []
     for sn in snlist:
-        indices.append([i for i in range(len(data)) if data['id'][i] == sn])
+        indices.append([i for i in range(len(data)) if data['name'][i] == sn])
     return indices
 
 if __name__ == '__main__':
@@ -145,22 +145,15 @@ if __name__ == '__main__':
     parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SNe")
 
-    parser.add_option("-j", "--jla", dest="jla", default=False, action='store_true',
-                      help="Only use the SNe from the JLA sample")
-
     parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
 
     (options, args) = parser.parse_args()
 
-    JLAHOME = os.environ["JLA"]
     params = JLA.build_dictionary(options.config)
 
-    lcfile = JLAHOME + '/' + params[options.lcfits]
-
-    SN_data = np.genfromtxt(lcfile, skip_header=1, usecols=(0, 1, 2, 18, 19),
-                            dtype='S10, f8, f8, f8, f8',
-                            names=['id', 'z_CMB', 'z_helio', 'ra', 'dec'])
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
     SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
@@ -168,18 +161,13 @@ if __name__ == '__main__':
     SN_indices = reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
 
-    velfile = JLAHOME+'/'+params['velocityField']
+
+    velfile = JLA.get_full_path(params['velocityField'])
     vel_correction = VelocityCorrection(velfile)
     #z_correction = vel_correction.apply(SN_data)
 
     C_pecvel = vel_correction.covmat_pecvel(SN_data)
 
-    t = time.gmtime(time.time())
-    date = '%4d%02d%02d' % (t[0], t[1], t[2])
+    date =  JLA.get_date()
 
-    if options.jla:
-        prefix = 'JLA_'
-    else:
-        prefix = ''
-
-    pyfits.writeto('%sC_pecvel_%s.fits' % (prefix, date), np.array(C_pecvel), clobber=True)
+    fits.writeto('C_pecvel_%s.fits' % date, np.array(C_pecvel), clobber=True)
