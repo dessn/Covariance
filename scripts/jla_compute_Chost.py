@@ -3,12 +3,11 @@
 """Python program to compute C_host
 """
 
-import os
-import time
 from optparse import OptionParser
 import numpy as np
-import pyfits
+import astropy.io.fits as fits
 import JLA_library as JLA
+from astropy.table import Table
 
 class HostCorrection(object):
     """ functions to contruct covariance matrix for uncertainty in host mass correction """
@@ -19,14 +18,14 @@ class HostCorrection(object):
     def H_low(self, SNe):
         """ indicator function for SNe with borderline low mass """
         H = np.zeros((3*len(SNe), 1))
-        selection = np.where((SNe['mass'] >= 9) & (SNe['mass'] < 10))[0]
+        selection = np.where((SNe['3rdvar'] >= 9) & (SNe['3rdvar'] < 10))[0]
         H[3*selection] = 1.
         return H
 
     def H_high(self, SNe):
         """ indicator function for SNe with borderline high mass """
         H = np.zeros((3*len(SNe), 1))
-        selection = np.where((SNe['mass'] > 10) & (SNe['mass'] <= 11))[0]
+        selection = np.where((SNe['3rdvar'] > 10) & (SNe['3rdvar'] <= 11))[0]
         H[3*selection] = 1.
         return H
 
@@ -38,20 +37,19 @@ class HostCorrection(object):
         nSNe = len(SNe)
         chost = np.zeros((3*nSNe, 3*nSNe))
         for i in range(nSNe):
-            if np.sign(SNe['mass'][i]-SNe['mass_err'][i]-10) != np.sign(SNe['mass'][i]
-                                                                        +SNe['mass_err'][i]-10):
+            if np.sign(SNe['3rdvar'][i]-SNe['d3rdvar'][i]-10) != np.sign(SNe['3rdvar'][i]
+                                                                        +SNe['d3rdvar'][i]-10):
                 chost[3*i][3*i] += self.Delta_M**2
         chost += self.Delta_M**2 * np.dot(self.H_low(SNe), self.H_low(SNe).T)
         chost += self.Delta_M**2 * np.dot(self.H_high(SNe), self.H_high(SNe).T)
 
         return chost
 
-
 def reindex_SNe(snlist, data):
     """ list of indices to reindex the data so that it matches the list of SNe """
     indices = []
     for sn in snlist:
-        indices.append([i for i in range(len(data)) if data['id'][i] == sn])
+        indices.append([i for i in range(len(data)) if data['name'][i] == sn])
     return indices
 
 if __name__ == '__main__':
@@ -64,22 +62,16 @@ if __name__ == '__main__':
     parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SNe")
 
-    parser.add_option("-j", "--jla", dest="jla", default=False, action='store_true',
-                      help="Only use the SNe from the JLA sample")
-
     parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
 
     (options, args) = parser.parse_args()
 
-    JLAHOME = os.environ["JLA"]
     params = JLA.build_dictionary(options.config)
+    
 
-    lcfile = JLAHOME + '/' + params[options.lcfits]
-
-    SN_data = np.genfromtxt(lcfile, skip_header=1, usecols=(0, 10, 11),
-                            dtype='S10, f8, f8',
-                            names=['id', 'mass', 'mass_err'])
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
     SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
@@ -91,13 +83,6 @@ if __name__ == '__main__':
 
     C_host = host_correction.covmat_host(SN_data)
 
+    date = JLA.get_date()
 
-    t = time.gmtime(time.time())
-    date = '%4d%02d%02d' % (t[0], t[1], t[2])
-
-    if options.jla:
-        prefix = 'JLA_'
-    else:
-        prefix = ''
-
-    pyfits.writeto('%sC_host_%s.fits' % (prefix, date), np.array(C_host), clobber=True)
+    fits.writeto('C_host_%s.fits' % date, np.array(C_host), clobber=True)
