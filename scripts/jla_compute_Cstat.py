@@ -1,0 +1,93 @@
+"""Python program to compute C_stat
+"""
+
+from optparse import OptionParser
+
+def compute_Cstat(options):
+    """Python program to compute C_stat
+    """
+
+    import numpy
+    import astropy.io.fits as fits
+    from astropy.table import Table
+    import JLA_library as JLA
+
+    # -----------  Read in the configuration file ------------
+
+    params=JLA.build_dictionary(options.config)
+
+    # -----------  Read in the SN ordering ------------------------
+    SNeList = numpy.genfromtxt(options.SNlist,
+                               usecols=(0, 2),
+                               dtype='S30,S200',
+                               names=['id', 'lc'])
+    nSNe = len(SNeList)
+
+    for i, SN in enumerate(SNeList):
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
+
+    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
+    SNe = Table.read(lightCurveFits, format='fits')
+
+
+    # -----------  Read in the data --------------------------
+
+    print 'There are %d SNe in the sample' % (nSNe)
+
+    indeces=[]
+    for SN in SNeList['id']:
+        index=numpy.where(SNe['name']==SN)[0]
+        if len(index) > 0:
+            indeces.append(index[0])
+
+    SNe=SNe[indeces]
+
+    C_stat=numpy.zeros(9*nSNe*nSNe).reshape(3*nSNe,3*nSNe)
+
+    for i,SN in enumerate(SNe):
+        cov=numpy.zeros(9).reshape(3,3)
+        cov[0,0]=SN['dmb']**2.
+        cov[1,1]=SN['dx1']**2.
+        cov[2,2]=SN['dcolor']**2.
+        cov[0,1]=SN['cov_m_s']
+        cov[0,2]=SN['cov_m_c']
+        cov[1,2]=SN['cov_s_c']
+        # symmetrise
+        cov=cov+cov.T-numpy.diag(cov.diagonal())
+        C_stat[i*3:i*3+3,i*3:i*3+3]=cov
+
+    # -----------  Read in the base matrix computed using salt2_stat.cc ------------
+
+    if options.base!=None:
+        C_stat+=fits.getdata(options.base)
+
+    date = JLA.get_date()
+    fits.writeto('C_stat_%s.fits' % date,C_stat,clobber=True) 
+
+    return
+    
+if __name__ == '__main__':
+
+    PARSER = OptionParser()
+
+    PARSER.add_option("-c", "--config", dest="config", default="JLA.config",
+                      help="Parameter file containting the location of various JLA parameters")
+
+    PARSER.add_option("-j", "--jla", dest="jla", default=False,
+                      action="store_true",
+                      help="Restrict this to SNe in the JLA sample")
+
+    PARSER.add_option("-b", "--base", dest="base", default=None,
+                      help="Base matrix, at the start, this is the matrix ")
+
+    PARSER.add_option("-s", "--SNlist", dest="SNlist", 
+                      help="List of SN")
+
+    PARSER.add_option("-l", "--listing", dest="listing", default=None,
+                      help="A list of the SNe to update")
+
+    (OPTIONS, ARGS) = PARSER.parse_args()
+
+    compute_Cstat(OPTIONS)
+
+

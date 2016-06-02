@@ -74,7 +74,7 @@ if __name__ == '__main__':
     SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
-    SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
+    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
 
     SN_indices = reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
