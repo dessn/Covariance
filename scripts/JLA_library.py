@@ -105,6 +105,25 @@ def get_full_path(path):
     else:
         return path
 
+def add_survey(SNe):
+    # We need to allow for Vanina's naming convention
+    # The will fail at some stage. 
+    # It would be better to do this once in the FITS table that you use
+    nSNe = len(SNe)
+    SNe['survey'] = numpy.zeros(nSNe,'a10')
+
+    for i,SN in enumerate(SNe):
+        if SN['name'][0:4]=='SDSS':
+            SNe['survey'][i]='SDSS'
+        elif SN['name'][2:4] in ['D1','D2','D3','D4']:
+            SNe['survey'][i]='SNLS'
+        elif SN['name'][0:2]=='sn':
+            SNe['survey'][i]='nearby'
+        else:
+            SNe['survey'][i]='high-z'
+
+    return
+
 def build_dictionary(f):
     """
     Creates a dictionary from an input file
