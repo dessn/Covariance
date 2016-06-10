@@ -11,7 +11,7 @@ def add_covar_matrices(options):
 
     import time
     import numpy
-    import pyfits
+    import astropy.io.fits as fits
     import JLA_library as JLA
 
     params = JLA.build_dictionary(options.config)
@@ -21,8 +21,20 @@ def add_covar_matrices(options):
 
     # Read in the covariance matrices
     matrices = []
-    for matrix in params["matrices"].split(','):
-        matrices.append(pyfits.getdata(JLA.get_full_path(matrix), 0))
+
+    systematic_terms=['bias','cal','host','dust','model','nonia','pecvel','stat']
+
+    covmatricies={'bias':params['bias'],
+                  'cal':params['cal'],
+                  'host':params['host'],
+                  'dust':params['dust'],
+                  'model':params['model'],
+                  'nonia':params['nonia'],
+                  'pecvel':params['pecvel'],
+                  'stat':params['stat']}
+
+    for term in systematic_terms:
+        matrices.append(fits.getdata(JLA.get_full_path(covmatricies[term]), 0))
 
     # Add the matrices
     size = matrices[0].shape
@@ -32,10 +44,9 @@ def add_covar_matrices(options):
 
     # Write out this matrix. This is C_eta in qe. 13 of B14
 
-    ymd = time.gmtime(time.time())
-    date = '%4d%02d%02d' % (ymd[0], ymd[1], ymd[2])
+    date=JLA.get_date()
 
-    pyfits.writeto('C_eta_%s.fits' % (date), add, clobber=True)
+    fits.writeto('C_eta_%s.fits' % (date), add, clobber=True)
 
     # Compute A
 
@@ -54,7 +65,7 @@ def add_covar_matrices(options):
 
     # Add the diagonal terms
 
-    sigma = numpy.genfromtxt(JLA.get_full_path(options.diagonal),
+    sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),
                              comments='#',
                              usecols=(0, 1, 2),
                              dtype='f8,f8,f8',
@@ -67,7 +78,7 @@ def add_covar_matrices(options):
         sigma['sigma_lens'][i]**2 + \
         sigma_pecvel[i]**2
 
-    pyfits.writeto('C_%s.fits' % (date), cov, clobber=True)
+    fits.writeto('C_total_%s.fits' % (date), cov, clobber=True)
 
     return
 
@@ -78,10 +89,6 @@ if __name__ == '__main__':
     PARSER.add_option("-c", "--config", dest="config", 
                       default="Shuvo.config",
                       help="Parameter file containting the location of the JLA files")
-
-    PARSER.add_option("-d", "--diagonal", dest="diagonal", 
-                      default="sigma_mu.txt",
-                      help="Diagonal terms")
 
     (OPTIONS, ARGS) = PARSER.parse_args()
 

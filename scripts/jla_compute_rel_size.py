@@ -149,10 +149,13 @@ def compute_rel_size(options):
 
     # Combine the matrices to compute the full covariance matrix, and compute its inverse
     if options.all:
-        #read in the user provided matrix, otherwise compute it
+        #read in the user provided matrix, otherwise compute it, and write it out
         C=fits.getdata(JLA.get_full_path(params['all']))
     else:
         C=add_covar_matrices(covmatricies,params['diag'])
+        date=JLA.get_date()
+        fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
+
     
     Cinv=numpy.matrix(C).I
 
