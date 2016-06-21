@@ -8,9 +8,8 @@ def compute_dust(options):
     """
 
     import numpy
-    import pyfits
+    import astropy.io.fits as fits
     import os
-    import time
     import JLA_library as JLA
 
     # ---------- Read in the SNe list -------------------------
@@ -39,15 +38,9 @@ def compute_dust(options):
     
     cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0
 
-    ymd = time.gmtime(time.time())
-    date = '%4d%02d%02d' % (ymd[0], ymd[1], ymd[2])
+    date = JLA.get_date()
 
-    if options.jla:
-        prefix = 'JLA_'
-    else:
-        prefix = ''
-
-    pyfits.writeto('%sC_dust_%s.fits' % (prefix, date), cdust, clobber=True) 
+    fits.writeto('C_dust_%s.fits' % date, cdust, clobber=True) 
 
     return
 
@@ -60,10 +53,6 @@ if __name__ == '__main__':
 
     PARSER.add_option("-s", "--SNlist", dest="SNlist", 
                   help="List of SN")
-
-    PARSER.add_option("-j", "--jla", dest="jla", default=False,
-                  action='store_true',
-                  help="Only use the SNe from the JLA sample")
 
     (OPTIONS, ARGS) = PARSER.parse_args()
 
