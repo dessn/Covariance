@@ -11,9 +11,9 @@ coh_dict = {'SDSS': 0.108, 'SNLS': 0.08, 'nearby': 0.134, 'high-z': 0.1}
 
 def compute_diag(SNe):
     lens = 0.055
-    c = 3e5 #km/s
+    #c = 3e5 #km/s
     sigma_lens = 0.055 * SNe['zcmb']
-    sigma_pecvel = 5/np.log(10) * 150/c * SNe['zcmb']
+    sigma_pecvel = 5*5e-4/(np.log(10) *SNe['zcmb'])
     sigma_coh = np.array([coh_dict[JLA.survey(sn)] for sn in SNe])
     return np.column_stack((sigma_coh, sigma_lens, sigma_pecvel))
 

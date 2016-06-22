@@ -112,25 +112,22 @@ def get_full_path(path):
         return rootDir+path[path.index('/'):]
     else:
         return path
-
-def add_survey(SNe):
-    # We need to allow for Vanina's naming convention
-    # The will fail at some stage. 
-    # It would be better to do this once in the FITS table that you use
-    nSNe = len(SNe)
-    SNe['survey'] = numpy.zeros(nSNe,'a10')
-
-    for i,SN in enumerate(SNe):
-        if SN['name'][0:4]=='SDSS':
-            SNe['survey'][i]='SDSS'
-        elif SN['name'][2:4] in ['D1','D2','D3','D4']:
-            SNe['survey'][i]='SNLS'
-        elif SN['name'][0:2]=='sn':
-            SNe['survey'][i]='nearby'
-        else:
-            SNe['survey'][i]='high-z'
-
-    return
+    
+def survey(sn):
+    """ assigns SN to sample; works for both formats of sn['name'] (list or str)
+    """
+    if len(sn['name']) > 1:
+        name = sn['name']
+    else:
+        name = sn['name'][0]
+    if name[0:4] == 'SDSS':
+        return 'SDSS'
+    elif name[2:4] in ['D1', 'D2', 'D3', 'D4']:
+        return 'SNLS'
+    elif name[0:2] == 'sn':
+        return 'nearby'
+    else:
+        return 'high-z'
 
 def build_dictionary(f):
     """
