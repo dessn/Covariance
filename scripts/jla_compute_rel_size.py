@@ -88,12 +88,7 @@ def compute_rel_size(options):
     print 'There are %d SNe in this sample' % (nSNe)
 
     # sort it to match the listing in options.SNlist
-    indices=[]
-    for SN in SNeList['id']:
-        index=numpy.where(SNe['name']==SN)[0]
-        if len(index) > 0:
-            indices.append(index[0])
-            
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)        
     SNe=SNe[indices]
 
     # ---------- Compute the Jacobian ----------------------
@@ -109,23 +104,37 @@ def compute_rel_size(options):
 
     # Varying Om
     cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om']+offset['Om'], w0=JLA_result['w'])
-    J.append(5*numpy.log10(cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb'])))
-
+    J.append(5*numpy.log10( (cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[0]))
+    # top =cosmo1.luminosity_distance(SNe['zcmb'])
+    #bottom= cosmo2.luminosity_distance(SNe['zcmb'])
+    #print top.shape, bottom.shape, (top/bottom)[0].shape
+    a_ = 5*numpy.log10( (cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[0])#5*numpy.log10(cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))
+    #print a_
     # varying alpha
     J.append(1.0*offset['alpha']*SNe['x1'])
-
+    b_ = 1.0*offset['alpha']*SNe['x1']
+    #print b_
     # varying beta
     J.append(-1.0*offset['beta']*SNe['color'])
+    c_ = -1.0*offset['beta']*SNe['color']
+    print c_
+    print c_[:,0]
 
     # varying M_B
 
     J.append(offset['M_B']*numpy.ones(nSNe))
+    d_ = offset['M_B']*numpy.ones(nSNe)
+    #print d_
+    print a_.shape, b_[:,0].shape, c_[:,0].shape, d_.shape
 
     # varying Delta M_B
 
     # The factor of 100 is needed as we are offsetting each parameter by 0.01
-
-    J = numpy.matrix(numpy.concatenate(J).reshape(nSNe,nFit,order='F') * 100.)
+    #print J
+    #print ([J[i] for i in range(len(J))])
+    #print kitten
+    #print len(J), [len(J[i]) for i in range(4)], nSNe, nFit
+    J = numpy.matrix(numpy.concatenate((a_,b_[:,0],c_[:,0],d_)).reshape(nSNe,nFit,order='F') * 100.)
 
     # Set up the covariance matrices
 
@@ -216,7 +225,7 @@ if __name__ == '__main__':
     parser.add_option("-c", "--config", dest="config", default="JLA.config",
                       help="Parameter file containting the location of various JLA parameters")
 
-    parser.add_option("-s", "--SNlist", dest="SNlist", default="JLA.list",
+    parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
 
     parser.add_option("-a", "--all", dest="all", default=False,
