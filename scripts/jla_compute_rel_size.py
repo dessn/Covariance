@@ -51,14 +51,12 @@ def add_covar_matrices(covmatrices,diag):
                              comments='#',
                              usecols=(0, 1, 2),
                              dtype='f8,f8,f8',
-                             names=['sigma_coh', 'sigma_lens', 'z'])
-
-    sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])
+                             names=['sigma_coh', 'sigma_lens', 'sigma_pecvel'])
 
     for i in range(nSNe):
         cov[i, i] += sigma['sigma_coh'][i]**2 + \
         sigma['sigma_lens'][i]**2 + \
-        sigma_pecvel[i]**2
+        sigma['sigma_pecvel'][i]**2
 
     return cov
 
@@ -191,10 +189,9 @@ def compute_rel_size(options):
         cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatrices[term])))
         if 'C_stat.fits' in covmatrices[term]:
             # Add diagonal term from Eq. 13 to the magnitude
-            sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','z'])
-            sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])
+            sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','sigma_pecvel'])
             for i in range(nSNe):
-                cov[3*i,3*i] += sigma['sigma_coh'][i] ** 2 + sigma['sigma_lens'][i] ** 2 + sigma_pecvel[i] ** 2
+                cov[3*i,3*i] += sigma['sigma_coh'][i] ** 2 + sigma['sigma_lens'][i] ** 2 + sigma['sigma_pecvel'][i] ** 2
 
 
 

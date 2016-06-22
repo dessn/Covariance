@@ -22,10 +22,10 @@ def add_covar_matrices(options):
     # Read in the covariance matrices
     matrices = []
 
-    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
+    systematic_terms = ['bias',  'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']#'cal',
 
     covmatrices = {'bias':params['bias'],
-                   'cal':params['cal'],
+                   #'cal':params['cal'],
                    'host':params['host'],
                    'dust':params['dust'],
                    'model':params['model'],
@@ -69,14 +69,12 @@ def add_covar_matrices(options):
                              comments='#',
                              usecols=(0, 1, 2),
                              dtype='f8,f8,f8',
-                             names=['sigma_coh', 'sigma_lens', 'z'])
-
-    sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])
+                             names=['sigma_coh', 'sigma_lens', 'sigma_pecvel'])
 
     for i in range(nSNe):
         cov[i, i] += sigma['sigma_coh'][i]**2 + \
         sigma['sigma_lens'][i]**2 + \
-        sigma_pecvel[i]**2
+        sigma['sigma_pecvel'][i]**2
 
     fits.writeto('C_total_%s.fits' % (date), cov, clobber=True)
 
