@@ -7,7 +7,7 @@ See section 6.2 of B14 for a description of the technique
 
 from optparse import OptionParser
 
-def add_covar_matrices(covmatricies,diag):
+def add_covar_matrices(covmatrices,diag):
     """
     Python program that adds the individual covariance matrices into a single matrix
     """
@@ -21,8 +21,8 @@ def add_covar_matrices(covmatricies,diag):
 
     # Read in the covariance matrices
     matrices = []
-    for matrix in covmatricies:
-        matrices.append(fits.getdata(JLA.get_full_path(covmatricies[matrix]), 0))
+    for matrix in covmatrices:
+        matrices.append(fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0))
 
     # Add the matrices
     size = matrices[0].shape
@@ -90,13 +90,13 @@ def compute_rel_size(options):
     print 'There are %d SNe in this sample' % (nSNe)
 
     # sort it to match the listing in options.SNlist
-    indeces=[]
+    indices=[]
     for SN in SNeList['id']:
         index=numpy.where(SNe['name']==SN)[0]
         if len(index) > 0:
-            indeces.append(index[0])
+            indices.append(index[0])
             
-    SNe=SNe[indeces]
+    SNe=SNe[indices]
 
     # ---------- Compute the Jacobian ----------------------
     # The Jacobian is an m by 4 matrix, where m is the number of fit parameters d mu / d theta
@@ -127,32 +127,32 @@ def compute_rel_size(options):
 
     # The factor of 100 is needed as we are offsetting each parameter by 0.01
 
-    J=numpy.matrix(numpy.concatenate(J).reshape(nSNe,nFit,order='F') * 100.)
+    J = numpy.matrix(numpy.concatenate(J).reshape(nSNe,nFit,order='F') * 100.)
 
     # Set up the covariance matrices
 
-    systematic_terms=['bias','cal','host','dust','model','nonia','pecvel','stat']
+    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
-    covmatricies={'bias':params['bias'],
-                  'cal':params['cal'],
-                  'host':params['host'],
-                  'dust':params['dust'],
-                  'model':params['model'],
-                  'nonia':params['nonia'],
-                  'pecvel':params['pecvel'],
-                  'stat':params['stat']}
+    covmatrices = {'bias':params['bias'],
+                   'cal':params['cal'],
+                   'host':params['host'],
+                   'dust':params['dust'],
+                   'model':params['model'],
+                   'nonia':params['nonia'],
+                   'pecvel':params['pecvel'],
+                   'stat':params['stat']}
 
 
     if options.type in systematic_terms:
         print "Using %s for the %s term" % (options.name,options.type) 
-        covmatricies[options.type]=options.name
+        covmatrices[options.type]=options.name
 
     # Combine the matrices to compute the full covariance matrix, and compute its inverse
     if options.all:
         #read in the user provided matrix, otherwise compute it, and write it out
         C=fits.getdata(JLA.get_full_path(params['all']))
     else:
-        C=add_covar_matrices(covmatricies,params['diag'])
+        C=add_covar_matrices(covmatrices,params['diag'])
         date=JLA.get_date()
         fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
 
@@ -188,8 +188,8 @@ def compute_rel_size(options):
     result=[]
 
     for term in systematic_terms:
-        cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatricies[term])))
-        if 'C_stat.fits' in covmatricies[term]:
+        cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatrices[term])))
+        if 'C_stat.fits' in covmatrices[term]:
             # Add diagonal term from Eq. 13 to the magnitude
             sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','z'])
             sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])

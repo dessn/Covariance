@@ -91,6 +91,14 @@ class components:
                     self.startWave.append(float(entries[5]))
                     self.endWave.append(float(entries[6]))
                     self.data.append(numpy.array([float(entry) for entry in entries[7:]]).reshape(self.nPhases[-1],self.nWaveBins[-1],order="F"))
+
+                    
+def reindex_SNe(snlist, data):
+    """ list of indices to reindex the data so that it matches the list of SNe """
+    indices = []
+    for sn in snlist:
+        indices.append([i for i in range(len(data)) if data['name'][i] == sn])
+    return indices
                     
 def get_date():
     ymd = time.gmtime(time.time())
@@ -165,27 +173,30 @@ def SALTmodels(saltModels):
 
     return models
 
-def fitLC(inputFile,outputFile):
-    # Fits the lightcurve with the specified SALT2.4 lightcurve fitter
-    # Calls snfit
-    cmd='snfit '+inputFile+' -o '+outputFile
+def fitLC(inputFile, outputFile, salt_prefix=''):
+    """fits the lightcurve with the specified SALT2.4 lightcurve fitter;
+    calls snfit (can specify path to executable)
+    """
+    cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
+    #xprint cmd
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
-
+    #os.system(cmd)
     return
 
-def modelLC(inputFile,resultFile,modelFile):
-    # Models the lightrve
-    # Calls snlc
-    cmd='snlc '+inputFile+' -p '+resultFile+' -o '+modelFile
+def modelLC(inputFile, resultFile, modelFile, salt_prefix=''):
+    """SALT2 model for lightcurve; calls snlc (can specify path to executable)
+    """
+    cmd = salt_prefix + 'snlc '+ inputFile+' -p '+resultFile+' -o '+modelFile
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
-
     return
 
 def computeOffsets(nominalResult,perturbedResult):
+    """ returns offsets in m_B, X_1 and C when the fit is perturbed 
+    """
     # Nominal result
     f=open(nominalResult)
     lines=f.readlines()
@@ -257,8 +268,9 @@ def getDateOfMax(inputFile):
     return None,None
 
 
-def insertDateOfMax(SN,inputFile,outputFile):
+def insertDateOfMax(SN, inputFile, outputFile):
     # If the date of Max is already included skip
+    # haven't include salt_prefix argument yet; will do so when need to BZ
 
     cwd=os.getcwd()
     workArea='workArea/'+SN
@@ -287,7 +299,7 @@ def insertDateOfMax(SN,inputFile,outputFile):
     else:
         print 'Fitting and adjusting %s' % SN 
         outputFile1=SN+'.dat3'
-        fitLC(inputFile,outputFile1)
+        fitLC(inputFile, outputFile1)
         date,error=getDateOfMax(outputFile1)
         cmd1='echo @DayMax %s %s > %s' % (date,error,outputFile)
         sp.call(cmd1,shell=True)
@@ -307,7 +319,7 @@ def insertDateOfMax(SN,inputFile,outputFile):
 
     return None
 
-def compute_extinction_offset(SN,inputFile,offset):
+def compute_extinction_offset(SN, inputFile, offset, salt_prefix=''):
     # Write the result and the covariance matrix to the area you want to work in
     try:
         os.mkdir('workArea')
@@ -339,7 +351,7 @@ def compute_extinction_offset(SN,inputFile,offset):
     if os.path.isfile(outputFile1):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile1)
     else:
-        fitLC(inputFile1,outputFile1)
+        fitLC(inputFile1,outputFile1,salt_prefix)
 
     # Adjust the value of E(B-V)
     inputFile2=inputFile1+'2'
@@ -350,7 +362,7 @@ def compute_extinction_offset(SN,inputFile,offset):
     if os.path.isfile(outputFile2):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile2)
     else:
-        fitLC(inputFile2,outputFile2)
+        fitLC(inputFile2,outputFile2,salt_prefix)
     
     f=open(outputFile1)
     lines=f.readlines()

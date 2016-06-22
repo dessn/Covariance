@@ -128,13 +128,6 @@ class VelocityCorrection(object):
 
         return cpecvel
 
-def reindex_SNe(snlist, data):
-    """ list of indices to reindex the data so that it matches the list of SNe """
-    indices = []
-    for sn in snlist:
-        indices.append([i for i in range(len(data)) if data['name'][i] == sn])
-    return indices
-
 if __name__ == '__main__':
 
     parser = OptionParser()
@@ -158,7 +151,7 @@ if __name__ == '__main__':
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
     SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
 
-    SN_indices = reindex_SNe(SN_list, SN_data)
+    SN_indices = JLA.reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
 
 

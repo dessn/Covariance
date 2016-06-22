@@ -22,19 +22,19 @@ def add_covar_matrices(options):
     # Read in the covariance matrices
     matrices = []
 
-    systematic_terms=['bias','cal','host','dust','model','nonia','pecvel','stat']
+    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
-    covmatricies={'bias':params['bias'],
-                  'cal':params['cal'],
-                  'host':params['host'],
-                  'dust':params['dust'],
-                  'model':params['model'],
-                  'nonia':params['nonia'],
-                  'pecvel':params['pecvel'],
-                  'stat':params['stat']}
+    covmatrices = {'bias':params['bias'],
+                   'cal':params['cal'],
+                   'host':params['host'],
+                   'dust':params['dust'],
+                   'model':params['model'],
+                   'nonia':params['nonia'],
+                   'pecvel':params['pecvel'],
+                   'stat':params['stat']}
 
     for term in systematic_terms:
-        matrices.append(fits.getdata(JLA.get_full_path(covmatricies[term]), 0))
+        matrices.append(fits.getdata(JLA.get_full_path(covmatrices[term]), 0))
 
     # Add the matrices
     size = matrices[0].shape
