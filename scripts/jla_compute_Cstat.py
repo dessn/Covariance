@@ -34,13 +34,8 @@ def compute_Cstat(options):
 
     print 'There are %d SNe in the sample' % (nSNe)
 
-    indeces=[]
-    for SN in SNeList['id']:
-        index=numpy.where(SNe['name']==SN)[0]
-        if len(index) > 0:
-            indeces.append(index[0])
-
-    SNe=SNe[indeces]
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    SNe=SNe[indices]
 
     C_stat=numpy.zeros(9*nSNe*nSNe).reshape(3*nSNe,3*nSNe)
 

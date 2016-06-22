@@ -49,14 +49,12 @@ def compute_bias(options):
 
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
-
+        
     lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
     SNe = Table.read(lightCurveFits, format='fits')
 
     print 'There are %d SNe' % (nSNe)
 
-    # Determine which survey each of the SNe comes from, i.e. SNLS, SDSS, nearby or HST
-    JLA.add_survey(SNe)
     # Add a column that records the error in the bias
     SNe['e_bias'] = numpy.zeros(nSNe,'f8')
 
@@ -131,7 +129,7 @@ def compute_bias(options):
         # In other words, if the bias is negative, we subtract the error to make it even more negative
         # We assume 100% correlation between SNe
         for i,SN in enumerate(SNe):
-            if SN['survey'] == sample:
+            if JLA.survey(SN) == sample:
                 redshift = SN['zcmb']
                 vect = numpy.matrix([1,redshift,redshift**2.])
                 if poly(redshift,plsq[0]) > 0:

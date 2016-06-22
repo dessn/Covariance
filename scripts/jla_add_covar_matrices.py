@@ -85,7 +85,7 @@ if __name__ == '__main__':
     PARSER = OptionParser()
 
     PARSER.add_option("-c", "--config", dest="config", 
-                      default="Shuvo.config",
+                      default="JLA.config",
                       help="Parameter file containting the location of the JLA files")
 
     (OPTIONS, ARGS) = PARSER.parse_args()

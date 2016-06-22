@@ -7,16 +7,6 @@ import astropy.io.fits as fits
 import JLA_library as JLA
 from astropy.table import Table
 
-def survey(sn):
-    if sn['name'][0][0:4] == 'SDSS':
-        return 'SDSS'
-    elif sn['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
-        return 'SNLS'
-    elif sn['name'][0][0:2] == 'sn':
-        return 'nearby'
-    else:
-        return 'high-z'
-
 coh_dict = {'SDSS': 0.108, 'SNLS': 0.08, 'nearby': 0.134, 'high-z': 0.1}
 
 def compute_diag(SNe):
@@ -24,7 +14,7 @@ def compute_diag(SNe):
     c = 3e5 #km/s
     sigma_lens = 0.055 * SNe['zcmb']
     sigma_pecvel = 5/np.log(10) * 150/c * SNe['zcmb']
-    sigma_coh = np.array([coh_dict[survey(sn)] for sn in SNe])
+    sigma_coh = np.array([coh_dict[JLA.survey(sn)] for sn in SNe])
     return np.column_stack((sigma_coh, sigma_lens, sigma_pecvel))
 
 if __name__ == '__main__':

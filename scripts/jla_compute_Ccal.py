@@ -4,6 +4,7 @@
 from optparse import OptionParser
 import os
 import JLA_library as JLA
+import numpy as np
 
 # Usage
 # JLA_computeCcal_mp.py -n -j
@@ -80,7 +81,7 @@ def compute_Ccal(options):
     nSNe=len(SNeList)
     print 'There are %d SNe in the sample' % (nSNe)
     print 'There are %d SALT models' % (nSALTmodels)
-
+    
     # Add a survey column, which we use with the smoothing, and the redshift
     SNeList['survey'] = numpy.zeros(nSNe,'a10')
     SNeList['z'] = SNe['zhel']
@@ -168,7 +169,8 @@ def compute_Ccal(options):
         # We roughly follow the method descibed in the footnote of p13 of B14
         nPoints={'SNLS':21,'SDSS':21,'nearby':21,'highz':21}
         for sample in ['SNLS','SDSS','nearby']:
-            selection=(SNeList['survey']==sample)
+            #selection=(SNeList['survey']==sample)
+            selection == [JLA.survey(sn) == sample for sn in SNe]
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
