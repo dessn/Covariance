@@ -7,7 +7,7 @@ See section 6.2 of B14 for a description of the technique
 
 from optparse import OptionParser
 
-def add_covar_matrices(covmatricies,diag):
+def add_covar_matrices(covmatrices,diag):
     """
     Python program that adds the individual covariance matrices into a single matrix
     """
@@ -21,8 +21,8 @@ def add_covar_matrices(covmatricies,diag):
 
     # Read in the covariance matrices
     matrices = []
-    for matrix in covmatricies:
-        matrices.append(fits.getdata(JLA.get_full_path(covmatricies[matrix]), 0))
+    for matrix in covmatrices:
+        matrices.append(fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0))
 
     # Add the matrices
     size = matrices[0].shape
@@ -51,14 +51,12 @@ def add_covar_matrices(covmatricies,diag):
                              comments='#',
                              usecols=(0, 1, 2),
                              dtype='f8,f8,f8',
-                             names=['sigma_coh', 'sigma_lens', 'z'])
-
-    sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])
+                             names=['sigma_coh', 'sigma_lens', 'sigma_pecvel'])
 
     for i in range(nSNe):
         cov[i, i] += sigma['sigma_coh'][i]**2 + \
         sigma['sigma_lens'][i]**2 + \
-        sigma_pecvel[i]**2
+        sigma['sigma_pecvel'][i]**2
 
     return cov
 
@@ -90,13 +88,8 @@ def compute_rel_size(options):
     print 'There are %d SNe in this sample' % (nSNe)
 
     # sort it to match the listing in options.SNlist
-    indeces=[]
-    for SN in SNeList['id']:
-        index=numpy.where(SNe['name']==SN)[0]
-        if len(index) > 0:
-            indeces.append(index[0])
-            
-    SNe=SNe[indeces]
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)        
+    SNe=SNe[indices]
 
     # ---------- Compute the Jacobian ----------------------
     # The Jacobian is an m by 4 matrix, where m is the number of fit parameters d mu / d theta
@@ -111,48 +104,46 @@ def compute_rel_size(options):
 
     # Varying Om
     cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om']+offset['Om'], w0=JLA_result['w'])
-    J.append(5*numpy.log10(cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb'])))
+    J.append(5*numpy.log10((cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[0]))
 
     # varying alpha
-    J.append(1.0*offset['alpha']*SNe['x1'])
+    J.append(1.0*offset['alpha']*SNe['x1'][:,0])
 
     # varying beta
-    J.append(-1.0*offset['beta']*SNe['color'])
+    J.append(-1.0*offset['beta']*SNe['color'][:,0])
 
     # varying M_B
 
     J.append(offset['M_B']*numpy.ones(nSNe))
-
-    # varying Delta M_B
-
-    # The factor of 100 is needed as we are offsetting each parameter by 0.01
-
-    J=numpy.matrix(numpy.concatenate(J).reshape(nSNe,nFit,order='F') * 100.)
+    
+    #print [J[i].shape for i in range(len(J))]
+    
+    J = numpy.matrix(numpy.concatenate((J)).reshape(nSNe,nFit,order='F') * 100.)
 
     # Set up the covariance matrices
 
-    systematic_terms=['bias','cal','host','dust','model','nonia','pecvel','stat']
+    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
-    covmatricies={'bias':params['bias'],
-                  'cal':params['cal'],
-                  'host':params['host'],
-                  'dust':params['dust'],
-                  'model':params['model'],
-                  'nonia':params['nonia'],
-                  'pecvel':params['pecvel'],
-                  'stat':params['stat']}
+    covmatrices = {'bias':params['bias'],
+                   'cal':params['cal'],
+                   'host':params['host'],
+                   'dust':params['dust'],
+                   'model':params['model'],
+                   'nonia':params['nonia'],
+                   'pecvel':params['pecvel'],
+                   'stat':params['stat']}
 
 
     if options.type in systematic_terms:
         print "Using %s for the %s term" % (options.name,options.type) 
-        covmatricies[options.type]=options.name
+        covmatrices[options.type]=options.name
 
     # Combine the matrices to compute the full covariance matrix, and compute its inverse
     if options.all:
         #read in the user provided matrix, otherwise compute it, and write it out
         C=fits.getdata(JLA.get_full_path(params['all']))
     else:
-        C=add_covar_matrices(covmatricies,params['diag'])
+        C=add_covar_matrices(covmatrices,params['diag'])
         date=JLA.get_date()
         fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
 
@@ -188,13 +179,12 @@ def compute_rel_size(options):
     result=[]
 
     for term in systematic_terms:
-        cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatricies[term])))
-        if 'C_stat.fits' in covmatricies[term]:
+        cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatrices[term])))
+        if 'C_stat.fits' in covmatrices[term]:
             # Add diagonal term from Eq. 13 to the magnitude
-            sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','z'])
-            sigma_pecvel = (5 * 150 / 3e5) / (numpy.log(10.) * sigma['z'])
+            sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','sigma_pecvel'])
             for i in range(nSNe):
-                cov[3*i,3*i] += sigma['sigma_coh'][i] ** 2 + sigma['sigma_lens'][i] ** 2 + sigma_pecvel[i] ** 2
+                cov[3*i,3*i] += sigma['sigma_coh'][i] ** 2 + sigma['sigma_lens'][i] ** 2 + sigma['sigma_pecvel'][i] ** 2
 
 
 
@@ -219,7 +209,7 @@ if __name__ == '__main__':
     parser.add_option("-c", "--config", dest="config", default="JLA.config",
                       help="Parameter file containting the location of various JLA parameters")
 
-    parser.add_option("-s", "--SNlist", dest="SNlist", default="JLA.list",
+    parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
 
     parser.add_option("-a", "--all", dest="all", default=False,

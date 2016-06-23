@@ -71,16 +71,10 @@ def compute_nonIa(options):
     SNe['bin'] = 0
     SNe['eval'] = False
 
-    # We need to make sure that the order is the same as that is SNeList
-    # What happens if the number of SNe in SNeSList is less than in SNe?
+    # make order of data (in SNe) match SNeList
 
-    indeces = []
-    for SN in SNeList['id']:
-        index = numpy.where(SNe['name'] == SN)[0]
-        if len(index) > 0:
-            indeces.append(index[0])
-
-    SNe = SNe[indeces]
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    SNe = SNe[indices]
 
     # Identify the SNLS in the JLA sample
 

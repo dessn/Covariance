@@ -4,24 +4,28 @@
 from optparse import OptionParser
 import os
 import JLA_library as JLA
+import numpy as np
 
 # Usage
 # JLA_computeCcal_mp.py -n -j
 # 
 
-def runSALT(SALTpath,SALTmodel,inputFile,SN):
+def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     import os
     
     # Set up the path to the SALT model and the name of the outputFile
+    #print SALTpath
     os.environ['SALTPATH']=SALTpath+SALTmodel['directory']+'/snfit_data/'
     outputFile=options.workArea+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
+## move later    
+
     if os.path.isfile(outputFile):
         #    pass
         print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
         # Otherwise, do the fit
-        JLA.fitLC(inputFile,outputFile)
-        
+        #print 'fitting', salt_prefix, 'using model ', SALTmodel, inputFile, 'output is ', outputFile
+        JLA.fitLC(inputFile, outputFile, salt_prefix)
     # Should add results to a log file
     return outputFile
 
@@ -41,7 +45,10 @@ def compute_Ccal(options):
     # -----------  Read in the configuration file ------------
 
     params=JLA.build_dictionary(options.config)
-
+    try:
+        salt_prefix = params['saltPrefix']
+    except KeyError:
+        salt_prefix = ''
 
     # ---------- Read in the SNe list -------------------------
 
@@ -61,25 +68,20 @@ def compute_Ccal(options):
     SNe = Table.read(lightCurveFits, format='fits')
     
     # Make sure that the order is correct
-    # We could replace this with Bonnie's code
-    indeces = []
-    for SN in SNeList['id']:
-        index = numpy.where(SNe['name'] == SN)[0]
-        if len(index) > 0:
-            indeces.append(index[0])
-
-    SNe = SNe[indeces]
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    SNe = SNe[indices]
 
     # -----------  Set up the structures to handle the different salt models -------
     SALTpath=JLA.get_full_path(params['saltPath'])
 
     SALTmodels=JLA.SALTmodels(SALTpath+'/saltModels.list')
     nSALTmodels=len(SALTmodels)-1
+    #print SALTmodels, nSALTmodels
 
     nSNe=len(SNeList)
     print 'There are %d SNe in the sample' % (nSNe)
     print 'There are %d SALT models' % (nSALTmodels)
-
+    
     # Add a survey column, which we use with the smoothing, and the redshift
     SNeList['survey'] = numpy.zeros(nSNe,'a10')
     SNeList['z'] = SNe['zhel']
@@ -101,7 +103,7 @@ def compute_Ccal(options):
 
     # -----------   Read in the calibration matrix -----------------
 
-    Cal=fits.getdata(JLA.get_full_path(params['calibration']))
+    Cal=fits.getdata(JLA.get_full_path(params['C_kappa']))
     print SALTpath
 
     # ------------- Create an area to work in -----------------------
@@ -130,7 +132,7 @@ def compute_Ccal(options):
 
         # Set up the number of processes
         pool = mp.Pool(processes=int(options.processes))
-        results = [pool.apply(runSALT, args=(SALTpath,SALTmodel,SN['lc'],SN['id'])) for SALTmodel in SALTmodels]
+        results = [pool.apply(runSALT, args=(SALTpath,SALTmodel,salt_prefix,SN['lc'],SN['id'])) for SALTmodel in SALTmodels]
         for result in results[1:]:
             dM,dX,dC=JLA.computeOffsets(results[0],result)
             J.extend([dM,dX,dC])
@@ -167,7 +169,8 @@ def compute_Ccal(options):
         # We roughly follow the method descibed in the footnote of p13 of B14
         nPoints={'SNLS':21,'SDSS':21,'nearby':21,'highz':21}
         for sample in ['SNLS','SDSS','nearby']:
-            selection=(SNeList['survey']==sample)
+            #selection=(SNeList['survey']==sample)
+            selection == [JLA.survey(sn) == sample for sn in SNe]
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
@@ -245,7 +248,7 @@ if __name__ == '__main__':
 
     parser.add_option("-P", "--Plot", dest="Plot", default=False,
                       action='store_true',
-                      help="Plot the Jacobain and the smoothed result")
+                      help="Plot the Jacobian and the smoothed result")
 
     parser.add_option("-S", "--smoothed", dest="smoothed", default=True,
                       action='store_false',

@@ -49,14 +49,12 @@ def compute_bias(options):
 
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
-
+        
     lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
     SNe = Table.read(lightCurveFits, format='fits')
 
     print 'There are %d SNe' % (nSNe)
 
-    # Determine which survey each of the SNe comes from, i.e. SNLS, SDSS, nearby or HST
-    JLA.add_survey(SNe)
     # Add a column that records the error in the bias
     SNe['e_bias'] = numpy.zeros(nSNe,'f8')
 
@@ -65,7 +63,7 @@ def compute_bias(options):
     # Fit a polynomial to the data
     # Determine the uncertainties
 
-    bias = numpy.genfromtxt(JLA.get_full_path(params['bias']),
+    bias = numpy.genfromtxt(JLA.get_full_path(params['biasPolynomial']),
                                   skip_header=3,
                                   usecols=(0, 1, 2, 3),
                                   dtype='S10,f8,f8,f8',
@@ -131,15 +129,15 @@ def compute_bias(options):
         # In other words, if the bias is negative, we subtract the error to make it even more negative
         # We assume 100% correlation between SNe
         for i,SN in enumerate(SNe):
-            if SN['survey']==sample:
-                redshift=SN['zcmb']
-                vect=numpy.matrix([1,redshift,redshift**2.])
+            if JLA.survey(SN) == sample:
+                redshift = SN['zcmb']
+                vect = numpy.matrix([1,redshift,redshift**2.])
                 if poly(redshift,plsq[0]) > 0:
-                    sign=1
+                    sign = 1
                 else:
-                    sign=-1
+                    sign = -1
 
-                SNe['e_bias'][i]=sign * thresh * numpy.sqrt(chisq / dof * (vect*numpy.matrix(plsq[1])*vect.T)[0,0])
+                SNe['e_bias'][i] = sign * thresh * numpy.sqrt(chisq / dof * (vect*numpy.matrix(plsq[1])*vect.T)[0,0])
 
     if options.plot:
         ax.legend()
@@ -153,7 +151,7 @@ def compute_bias(options):
     Zero=numpy.zeros(nSNe)
     H=numpy.concatenate((SNe['e_bias'],Zero,Zero)).reshape(3,nSNe).ravel(order='F')
 
-    C_bias=numpy.matrix(H)
+    C_bias = numpy.matrix(H)
 
     fits.writeto('C_bias_%s.fits' % (date),C_bias.T*C_bias,clobber=True) 
 
