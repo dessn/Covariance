@@ -427,6 +427,5 @@ def smooth(x,y,width=11):
     # Examine the noise around the best spline fit
     # residual=(y[z]-interpolate.splev(x[z],tck,der=0))**2.
     forPlotting=[med1,interpolate.splev(med1,tck,der=0)]
-
-    return forPlotting,interpolate.splev(x,tck,der=0)
+    return forPlotting,interpolate.splev(x[:,0],tck,der=0)
  

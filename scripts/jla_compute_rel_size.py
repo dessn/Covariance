@@ -81,8 +81,8 @@ def compute_rel_size(options):
 
     # -----------  Read in the data JLA --------------------------
 
-    lightCurveFits=JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
 
     nSNe=len(SNe)
     print 'There are %d SNe in this sample' % (nSNe)
@@ -212,6 +212,9 @@ if __name__ == '__main__':
 
     parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
+    
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
 
     parser.add_option("-a", "--all", dest="all", default=False,
                       action='store_true',

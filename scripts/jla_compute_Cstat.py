@@ -26,8 +26,8 @@ def compute_Cstat(options):
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
-    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
 
 
     # -----------  Read in the data --------------------------
@@ -77,8 +77,11 @@ if __name__ == '__main__':
 
     PARSER.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
+    
+    PARSER.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
 
-    PARSER.add_option("-l", "--listing", dest="listing", default=None,
+    PARSER.add_option("-u", "--update", dest="update", default=None,
                       help="A list of the SNe to update")
 
     (OPTIONS, ARGS) = PARSER.parse_args()

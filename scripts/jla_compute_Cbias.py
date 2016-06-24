@@ -50,8 +50,8 @@ def compute_bias(options):
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
         
-    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
 
     print 'There are %d SNe' % (nSNe)
 
@@ -161,19 +161,23 @@ def compute_bias(options):
 
 if __name__ == '__main__':
 
-    PARSER = OptionParser()
+    parser = OptionParser()
 
-    PARSER.add_option("-c", "--config", dest="config", default="JLA.config",
+    parser.add_option("-c", "--config", dest="config", default="JLA.config",
                       help="Parameter file containting the location of various JLA parameters")
 
-    PARSER.add_option("-s", "--SNlist", dest="SNlist", 
+    parser.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
 
-    PARSER.add_option("-p", "--plot", dest="plot",default=False,
+    
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
+    
+    parser.add_option("-p", "--plot", dest="plot",default=False,
                       action='store_true',
                       help="List of SN")
 
 
-    (options, args) = PARSER.parse_args()
+    (options, args) = parser.parse_args()
 
     compute_bias(options)

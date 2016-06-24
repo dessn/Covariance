@@ -17,14 +17,12 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     #print SALTpath
     os.environ['SALTPATH']=SALTpath+SALTmodel['directory']+'/snfit_data/'
     outputFile=options.workArea+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
-## move later    
 
     if os.path.isfile(outputFile):
         #    pass
         print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
         # Otherwise, do the fit
-        #print 'fitting', salt_prefix, 'using model ', SALTmodel, inputFile, 'output is ', outputFile
         JLA.fitLC(inputFile, outputFile, salt_prefix)
     # Should add results to a log file
     return outputFile
@@ -64,8 +62,8 @@ def compute_Ccal(options):
         
     # ----------  Read in the SN light curve fits ------------
     # This is mostly used to get the redshifts of the SNe.
-    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
     
     # Make sure that the order is correct
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
@@ -169,8 +167,8 @@ def compute_Ccal(options):
         # We roughly follow the method descibed in the footnote of p13 of B14
         nPoints={'SNLS':21,'SDSS':21,'nearby':21,'highz':21}
         for sample in ['SNLS','SDSS','nearby']:
-            #selection=(SNeList['survey']==sample)
-            selection == [JLA.survey(sn) == sample for sn in SNe]
+            selection=(SNeList['survey']==sample)
+            #selection == [JLA.survey(sn) == sample for sn in SNe]
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
@@ -210,7 +208,7 @@ def compute_Ccal(options):
     date=JLA.get_date()
 
     fits.writeto('J_%s.fits' % (date) ,J,clobber=True) 
-    fits.writeto('J_smmothed_%s.fits' % (date), J_smoothed,clobber=True) 
+    fits.writeto('J_smoothed_%s.fits' % (date), J_smoothed,clobber=True) 
 
     # Some matrix arithmatic
     # C_cal is a nSALTmodels by nSALTmodels matrix
@@ -257,6 +255,9 @@ if __name__ == '__main__':
     parser.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
 
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
+    
     (options, args) = parser.parse_args()
 
 

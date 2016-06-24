@@ -64,8 +64,8 @@ def compute_nonIa(options):
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
-    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
 
     # Add a bin column and a column that specified of the covariance is non-zero
     SNe['bin'] = 0
@@ -116,6 +116,9 @@ if __name__ == '__main__':
     PARSER.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
 
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
+    
     PARSER.add_option("-j", "--jla", dest="jla", default=False,
                       action='store_true',
                       help="Only use the SNe from the JLA sample")

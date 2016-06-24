@@ -41,8 +41,8 @@ def compute_model(options):
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
-    lightCurveFits = JLA.get_full_path(params['lightCurveFits'])
-    SNe = Table.read(lightCurveFits, format='fits')
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SNe = Table.read(lcfile, format='fits')
 
     print 'There are %d SNe' % (nSNe)
 
@@ -77,7 +77,9 @@ if __name__ == '__main__':
     PARSER.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
 
-
+    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+                      help="Key in config file pointing to lightcurve fit parameters")
+    
     (options, args) = PARSER.parse_args()
 
     compute_model(options)
