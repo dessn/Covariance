@@ -55,6 +55,8 @@ def compute_bias(options):
 
     print 'There are %d SNe' % (nSNe)
 
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    SNe=SNe[indices]
     # Add a column that records the error in the bias
     SNe['e_bias'] = numpy.zeros(nSNe,'f8')
 

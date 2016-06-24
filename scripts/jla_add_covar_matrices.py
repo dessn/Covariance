@@ -22,10 +22,10 @@ def add_covar_matrices(options):
     # Read in the covariance matrices
     matrices = []
 
-    systematic_terms = ['bias',  'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']#'cal',
+    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
     covmatrices = {'bias':params['bias'],
-                   #'cal':params['cal'],
+                   'cal':params['cal'],
                    'host':params['host'],
                    'dust':params['dust'],
                    'model':params['model'],

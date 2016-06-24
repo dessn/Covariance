@@ -232,7 +232,7 @@ if __name__ == '__main__':
     parser.add_option("-p", "--processes", dest="processes", default="2",
                       help="Number of processes, default 2")
 
-    parser.add_option("-w", "--workArea", dest="workArea", default="workArea",
+    parser.add_option("-w", "--workArea", dest="workArea", default="../workArea",
                       help="Work area that stores the light curve fits")
 
     parser.add_option("-o", "--output", dest="output", default=None,
