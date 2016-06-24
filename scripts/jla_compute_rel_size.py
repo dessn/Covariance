@@ -104,7 +104,7 @@ def compute_rel_size(options):
 
     # Varying Om
     cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om']+offset['Om'], w0=JLA_result['w'])
-    J.append(5*numpy.log10((cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[0]))
+    J.append(5*numpy.log10((cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[:,0]))
 
     # varying alpha
     J.append(1.0*offset['alpha']*SNe['x1'][:,0])
@@ -116,7 +116,8 @@ def compute_rel_size(options):
 
     J.append(offset['M_B']*numpy.ones(nSNe))
     
-    #print [J[i].shape for i in range(len(J))]
+    print [J[i].shape for i in range(len(J))]
+    print nSNe, nFit
     
     J = numpy.matrix(numpy.concatenate((J)).reshape(nSNe,nFit,order='F') * 100.)
 
