@@ -265,10 +265,15 @@ def getDateOfMax(inputFile):
     return None,None
 
 
-def insertDateOfMax(SN, inputFile, outputFile):
+
+def insertDateOfMax(SN, inputFile, outputFile, force=False):
     # If the date of Max is already included skip
     # haven't include salt_prefix argument yet; will do so when need to BZ
 
+    try:
+        os.mkdir('workArea')
+    except:
+        pass
     cwd=os.getcwd()
     workArea='workArea/'+SN
 
@@ -288,8 +293,9 @@ def insertDateOfMax(SN, inputFile, outputFile):
             dayMax=True
         if "COVMAT" in line:
             covMat=line.split()[1]
-            
-    if dayMax:
+
+
+    if dayMax and not force:
         cmd='cp %s %s' % (inputFile,outputFile)
         print 'Copying the lightcurve for %s' % SN 
         sp.call(cmd,shell=True)
@@ -298,11 +304,19 @@ def insertDateOfMax(SN, inputFile, outputFile):
         outputFile1=SN+'.dat3'
         fitLC(inputFile, outputFile1)
         date,error=getDateOfMax(outputFile1)
-        cmd1='echo @DayMax %s %s > %s' % (date,error,outputFile)
-        sp.call(cmd1,shell=True)
-        cmd2='cat %s >> %s' % (inputFile,outputFile)
-        sp.call(cmd2,shell=True)
-        
+        # Remove the old date of max and insert the new one
+        lc=open(inputFile)
+        lc_lines=lc.readlines()
+        lc.close()
+        lc=open(outputFile,'w')
+        lc.write('@DayMax %s %s\n' % (date, error))
+        for line in lc_lines:
+            if 'DayMax' in line:
+                pass
+            else:
+                lc.write(line)
+        lc.close()
+
 
     if covMat!=None:
         inputFile2=os.path.split(inputFile)[0]+'/'+covMat
