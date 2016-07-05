@@ -23,6 +23,11 @@ def add_covar_matrices(covmatrices,diag):
     matrices = []
     for matrix in covmatrices:
         matrices.append(fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0))
+        # Test for NaNs and replace them with zero
+        if numpy.isnan(matrices[-1]).any():
+            print 'Found a NaN in %s ... replacing them with zero' % (covmatrices[matrix])
+            print numpy.isnan(matrices[-1]).sum()
+            matrices[-1][numpy.isnan(matrices[-1])]=0.0
 
     # Add the matrices
     size = matrices[0].shape
@@ -92,7 +97,7 @@ def compute_rel_size(options):
     SNe=SNe[indices]
 
     # ---------- Compute the Jacobian ----------------------
-    # The Jacobian is an m by 4 matrix, where m is the number of fit parameters d mu / d theta
+    # The Jacobian is an m by 4 matrix, where m is the number of SNe
     # The columns are ordered in terms of Om, w, alpha and beta
 
     J=[]
@@ -115,9 +120,6 @@ def compute_rel_size(options):
     # varying M_B
 
     J.append(offset['M_B']*numpy.ones(nSNe))
-    
-    print [J[i].shape for i in range(len(J))]
-    print nSNe, nFit
     
     J = numpy.matrix(numpy.concatenate((J)).reshape(nSNe,nFit,order='F') * 100.)
 
@@ -148,7 +150,6 @@ def compute_rel_size(options):
         date=JLA.get_date()
         fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
 
-    
     Cinv=numpy.matrix(C).I
 
 
@@ -181,7 +182,7 @@ def compute_rel_size(options):
 
     for term in systematic_terms:
         cov=numpy.matrix(fits.getdata(JLA.get_full_path(covmatrices[term])))
-        if 'C_stat.fits' in covmatrices[term]:
+        if 'C_stat' in covmatrices[term]:
             # Add diagonal term from Eq. 13 to the magnitude
             sigma = numpy.genfromtxt(JLA.get_full_path(params['diag']),comments='#',usecols=(0,1,2),dtype='f8,f8,f8',names=['sigma_coh','sigma_lens','sigma_pecvel'])
             for i in range(nSNe):

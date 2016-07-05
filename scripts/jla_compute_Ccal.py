@@ -79,7 +79,7 @@ def compute_Ccal(options):
     nSNe=len(SNeList)
     print 'There are %d SNe in the sample' % (nSNe)
     print 'There are %d SALT models' % (nSALTmodels)
-    
+
     # Add a survey column, which we use with the smoothing, and the redshift
     SNeList['survey'] = numpy.zeros(nSNe,'a10')
     SNeList['z'] = SNe['zhel']
@@ -102,7 +102,14 @@ def compute_Ccal(options):
     # -----------   Read in the calibration matrix -----------------
 
     Cal=fits.getdata(JLA.get_full_path(params['C_kappa']))
+    # Multiply the ZP submatrix by 100^2, and the two ZP-offset matrices by 100,
+    # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
+    Cal[0:37,0:37]=Cal[0:37,0:37]*10000.
+    Cal[0:37,37:]*=Cal[0:37,37:]*100.
+    Cal[37:,0:37]=Cal[37:,0:37]*100.
+
     print SALTpath
+
 
     # ------------- Create an area to work in -----------------------
 
@@ -130,7 +137,11 @@ def compute_Ccal(options):
 
         # Set up the number of processes
         pool = mp.Pool(processes=int(options.processes))
-        results = [pool.apply(runSALT, args=(SALTpath,SALTmodel,salt_prefix,SN['lc'],SN['id'])) for SALTmodel in SALTmodels]
+        results = [pool.apply(runSALT, args=(SALTpath,
+                                             SALTmodel,
+                                             salt_prefix,
+                                             SN['lc'],
+                                             SN['id'])) for SALTmodel in SALTmodels]
         for result in results[1:]:
             dM,dX,dC=JLA.computeOffsets(results[0],result)
             J.extend([dM,dX,dC])
@@ -207,12 +218,21 @@ def compute_Ccal(options):
 
     date=JLA.get_date()
 
+
     fits.writeto('J_%s.fits' % (date) ,J,clobber=True) 
     fits.writeto('J_smoothed_%s.fits' % (date), J_smoothed,clobber=True) 
 
     # Some matrix arithmatic
     # C_cal is a nSALTmodels by nSALTmodels matrix
-    C=numpy.matrix(J)*numpy.matrix(Cal)*numpy.matrix(J).T
+
+    # Read in a smoothed Jacobian specified in the options
+    if options.jacobian != None:
+        J_smoothed=fits.getdata(options.jacobian)
+    else:
+        # Replace the NaNs in your smoothed Jacobian with zero
+        J_smoothed[numpy.isnan(J_smoothed)]=0
+
+    C=numpy.matrix(J_smoothed)*numpy.matrix(Cal)*numpy.matrix(J_smoothed).T
     if options.output==None:
         fits.writeto('C_cal_%s.fits' % (date), numpy.array(C), clobber=True) 
     else:
@@ -240,8 +260,7 @@ if __name__ == '__main__':
                       action='store_true',
                       help="Compute a new Jacobian, otherwise add it to the JLA one")
 
-    parser.add_option("-j", "--jla", dest="jla", default=False,
-                      action='store_true',
+    parser.add_option("-j", "--jacobian", dest="jacobian", default=None,
                       help="Only use the SNe from the JLA sample")
 
     parser.add_option("-P", "--Plot", dest="Plot", default=False,
