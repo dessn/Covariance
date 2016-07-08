@@ -420,7 +420,8 @@ def compute_extinction_offset(SN, inputFile, offset, salt_prefix=''):
     return M_perturbed-M_nominal,X_perturbed-X_nominal,C_perturbed-C_nominal
 
 def smooth(x,y,width=11):
-    # Compute the median in bins of 11 objects sorted in redshift
+    # Compute the median in bins of width objects sorted in redshift
+    # This smoothing algorithm differs from that in B14
     z=numpy.argsort(x)
     # This excludes SNe that do not fit into a whole bin at the end
     med1=numpy.median(x[z][:(x.size // width) * width].reshape(-1,width),axis=1)
@@ -436,10 +437,19 @@ def smooth(x,y,width=11):
     med1=numpy.append(med1,x[z[-1]])
     med2=numpy.append(y[z[0]],med2)
     med2=numpy.append(med2,y[z[-1]])
+   
     # Fit a spline curve to these points
     tck = interpolate.splrep(med1, med2, s=0)
     # Examine the noise around the best spline fit
     # residual=(y[z]-interpolate.splev(x[z],tck,der=0))**2.
+    result=interpolate.splev(x,tck,der=0)
     forPlotting=[med1,interpolate.splev(med1,tck,der=0)]
-    return forPlotting,interpolate.splev(x[:,0],tck,der=0)
+    return forPlotting,result
  
+def smoothJLA():
+    # A place holder for an algorithm that is closer to JLA
+    # In bins of 10 SNe, compute the scatter in that bin
+    # Take the median value of the scatter
+    # Adjust the smoothness parameter of the spline so that the summed difference between the 
+    # spline and the data squared is the number of SN time the scatter squared.
+    return None

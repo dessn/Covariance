@@ -19,8 +19,8 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     outputFile=options.workArea+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
 
     if os.path.isfile(outputFile):
-        #    pass
-        print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
+        pass
+#        print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
         # Otherwise, do the fit
         JLA.fitLC(inputFile, outputFile, salt_prefix)
@@ -105,10 +105,11 @@ def compute_Ccal(options):
     # Multiply the ZP submatrix by 100^2, and the two ZP-offset matrices by 100,
     # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
     Cal[0:37,0:37]=Cal[0:37,0:37]*10000.
-    Cal[0:37,37:]*=Cal[0:37,37:]*100.
-    Cal[37:,0:37]=Cal[37:,0:37]*100.
+    # 
+    #Cal[0:37,37:]*=Cal[0:37,37:]*100.
+    #Cal[37:,0:37]=Cal[37:,0:37]*100.
 
-    print SALTpath
+    #print SALTpath
 
 
     # ------------- Create an area to work in -----------------------
@@ -133,7 +134,7 @@ def compute_Ccal(options):
             pass
 
         firstModel=True
-        print 'Fitting SN #%d %s' % (i+1,SN['id'])
+        print 'Examining SN #%d %s' % (i+1,SN['id'])
 
         # Set up the number of processes
         pool = mp.Pool(processes=int(options.processes))
@@ -161,21 +162,21 @@ def compute_Ccal(options):
     if options.new:
         J=J_new
     else:
-        # The following is untested
-        jacobian=pyfits.getdata(JLAHOME+'/'+params['Jacobian'])
-        J=numpy.concatenate((jacobian,J_new),axis=0)
+        # Not implimented
+        exit()
 
 
     # Compute the new covariance matrix J . Cal . J.T produces a 3 * n_SN by 3 * n_SN matrix
     # J=jacobian
 
-    J_smoothed=numpy.array(J)
+    J_smoothed=numpy.array(J)*0.0
 
     # We need to concatenate the different samples ...
 
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
+        # Note that HST is smoothed as well.
         nPoints={'SNLS':21,'SDSS':21,'nearby':21,'highz':21}
         for sample in ['SNLS','SDSS','nearby']:
             selection=(SNeList['survey']==sample)
@@ -183,20 +184,20 @@ def compute_Ccal(options):
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
-                redshifts=SNeList[selection]['z']
-                derivatives_mag=J_sample[0::3][:,sys]
+                # We need to convert to a numpy array
+                # There is probably a better way
+                redshifts=numpy.array([z[0] for z in SNeList[selection]['z']])
+                derivatives_mag=J_sample[0::3][:,sys]  # [0::3] = [0,3,6 ...] Every 3rd one
                 forPlotting_mag,res_mag=JLA.smooth(redshifts,derivatives_mag,nPoints[sample])
                 derivatives_x1=J_sample[1::3][:,sys]
                 forPlotting_x1,res_x1=JLA.smooth(redshifts,derivatives_x1,nPoints[sample])
                 derivatives_c=J_sample[2::3][:,sys]
                 forPlotting_c,res_c=JLA.smooth(redshifts,derivatives_c,nPoints[sample])
 
-            # We need to insert the new results into the smoothed Jacobian matrix in the correct place
-            # The Jacobian ia a 3 * n_SN by nSATLModels matrix
-            # The rows are ordered by the mag, stretch and colour of each SNe.
-            
-            # The smooothed Jacobian does not quite look correct
-            J_smoothed[numpy.repeat(selection,3),sys]=numpy.concatenate([res_mag,res_x1,res_c]).reshape(3,selection.sum()).ravel('F')
+                # We need to insert the new results into the smoothed Jacobian matrix in the correct place
+                # The Jacobian ia a 3 * n_SN by nSATLModels matrix
+                # The rows are ordered by the mag, stretch and colour of each SNe.
+                J_smoothed[numpy.repeat(selection,3),sys]=numpy.concatenate([res_mag,res_x1,res_c]).reshape(3,selection.sum()).ravel('F')
 
             # If required, make some plots as a way of checking 
 
@@ -212,9 +213,7 @@ def compute_Ccal(options):
         ax3.plot(redshifts,derivatives_c,'bo')
         ax3.plot(forPlotting_c[0],forPlotting_c[1],'r-')
         
-
-        plt.show()
-
+        plt.close()
 
     date=JLA.get_date()
 
@@ -228,9 +227,9 @@ def compute_Ccal(options):
     # Read in a smoothed Jacobian specified in the options
     if options.jacobian != None:
         J_smoothed=fits.getdata(options.jacobian)
-    else:
-        # Replace the NaNs in your smoothed Jacobian with zero
-        J_smoothed[numpy.isnan(J_smoothed)]=0
+#    else:
+#        # Replace the NaNs in your smoothed Jacobian with zero
+#        J_smoothed[numpy.isnan(J_smoothed)]=0
 
     C=numpy.matrix(J_smoothed)*numpy.matrix(Cal)*numpy.matrix(J_smoothed).T
     if options.output==None:
