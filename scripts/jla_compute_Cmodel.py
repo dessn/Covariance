@@ -54,8 +54,12 @@ def compute_model(options):
     cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=Om_0, w0=-1.024)
     
     # For the JLA SNe
+    redshift = SNe['zcmb']
+    replace=(redshift < 0)
+    # For the non JLA SNe
+    redshift[replace]=SNe[replace]['zhel']
 
-    Delta_M=5*numpy.log10(cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))
+    Delta_M=5*numpy.log10(cosmo1.luminosity_distance(redshift)/cosmo2.luminosity_distance(redshift))
 
     # Build the covariance matrix. Note that only magnitudes are affected
     Zero=numpy.zeros(nSNe)
@@ -77,7 +81,7 @@ if __name__ == '__main__':
     PARSER.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
 
-    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+    PARSER.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
     
     (options, args) = PARSER.parse_args()

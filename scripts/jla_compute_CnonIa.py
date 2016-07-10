@@ -72,14 +72,14 @@ def compute_nonIa(options):
     SNe['eval'] = False
 
     # make order of data (in SNe) match SNeList
-
+    
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
 
-    # Identify the SNLS in the JLA sample
+    # Identify the SNLS SNe in the JLA sample
 
     for i, SN in enumerate(SNe):
-        if SN['source'] == 'JLA' and SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4']:
+        if SN['source'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
             SNe['eval'][i] = True
 
     # Work out which redshift bin each SNe belongs to
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     PARSER.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
 
-    parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
+    PARSER.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
     
     PARSER.add_option("-j", "--jla", dest="jla", default=False,

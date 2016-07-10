@@ -7,7 +7,7 @@ import JLA_library as JLA
 import numpy as np
 
 # Usage
-# JLA_computeCcal_mp.py -n -j
+# JLA_computeCcal_mp.py opitons
 # 
 
 def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
@@ -87,7 +87,7 @@ def compute_Ccal(options):
     # Identify the SNLS, SDSS, HST and low-z SNe. We use this when smoothing the Jacobian
     # There is probably a more elegant and efficient way of doing this
 
-    # We need to allow for Vanina's naming convention
+    # We need to allow for Vanina's naming convention when doing this for the photometric sample
 
     for i,SN in enumerate(SNeList):
         if SN['id'][0:4]=='SDSS':
@@ -106,8 +106,8 @@ def compute_Ccal(options):
     # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
     Cal[0:37,0:37]=Cal[0:37,0:37]*10000.
     # 
-    #Cal[0:37,37:]*=Cal[0:37,37:]*100.
-    #Cal[37:,0:37]=Cal[37:,0:37]*100.
+    Cal[0:37,37:]*=Cal[0:37,37:]*100.
+    Cal[37:,0:37]=Cal[37:,0:37]*100.
 
     #print SALTpath
 
@@ -157,28 +157,27 @@ def compute_Ccal(options):
 
     log.close()
 
-    # If requested, concatentate with the old Jacobian matrix
-
-    if options.new:
-        J=J_new
-    else:
-        # Not implimented
-        exit()
-
-
     # Compute the new covariance matrix J . Cal . J.T produces a 3 * n_SN by 3 * n_SN matrix
     # J=jacobian
 
-    J_smoothed=numpy.array(J)*0.0
+    J_smoothed=numpy.array(J_new)*0.0
+    J=J_new
 
     # We need to concatenate the different samples ...
+    
+    if options.Plot:
+        try:
+            os.mkdir('figures')
+        except:
+            pass               
+
 
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
         # Note that HST is smoothed as well.
-        nPoints={'SNLS':21,'SDSS':21,'nearby':21,'highz':21}
-        for sample in ['SNLS','SDSS','nearby']:
+        nPoints={'SNLS':11,'SDSS':11,'nearby':11,'highz':11}
+        for sample in ['SNLS','SDSS','nearby','highz']:
             selection=(SNeList['survey']==sample)
             #selection == [JLA.survey(sn) == sample for sn in SNe]
             J_sample=J[numpy.repeat(selection,3)]
@@ -199,21 +198,23 @@ def compute_Ccal(options):
                 # The rows are ordered by the mag, stretch and colour of each SNe.
                 J_smoothed[numpy.repeat(selection,3),sys]=numpy.concatenate([res_mag,res_x1,res_c]).reshape(3,selection.sum()).ravel('F')
 
-            # If required, make some plots as a way of checking 
+                # If required, make some plots as a way of checking 
 
-    if options.Plot and sys==45:
-        fig=plt.figure()
-        ax1=fig.add_subplot(311)
-        ax2=fig.add_subplot(312)
-        ax3=fig.add_subplot(313)
-        ax1.plot(redshifts,derivatives_mag,'bo')
-        ax1.plot(forPlotting_mag[0],forPlotting_mag[1],'r-')
-        ax2.plot(redshifts,derivatives_x1,'bo')
-        ax2.plot(forPlotting_x1[0],forPlotting_x1[1],'r-')
-        ax3.plot(redshifts,derivatives_c,'bo')
-        ax3.plot(forPlotting_c[0],forPlotting_c[1],'r-')
+                if options.Plot:
+                    print 'Creating plot for systematic %d and sample %s' % (sys, sample) 
+                    fig=plt.figure()
+                    ax1=fig.add_subplot(311)
+                    ax2=fig.add_subplot(312)
+                    ax3=fig.add_subplot(313)
+                    ax1.plot(redshifts,derivatives_mag,'bo')
+                    ax1.plot(forPlotting_mag[0],forPlotting_mag[1],'r-')
+                    ax2.plot(redshifts,derivatives_x1,'bo')
+                    ax2.plot(forPlotting_x1[0],forPlotting_x1[1],'r-')
+                    ax3.plot(redshifts,derivatives_c,'bo')
+                    ax3.plot(forPlotting_c[0],forPlotting_c[1],'r-')
         
-        plt.close()
+                    plt.savefig('figures/%s_sys_%d.png' % (sample,sys))
+                    plt.close()
 
     date=JLA.get_date()
 
@@ -254,10 +255,6 @@ if __name__ == '__main__':
 
     parser.add_option("-o", "--output", dest="output", default=None,
                       help="Output file name")
-
-    parser.add_option("-n", "--new", dest="new", default=True,
-                      action='store_true',
-                      help="Compute a new Jacobian, otherwise add it to the JLA one")
 
     parser.add_option("-j", "--jacobian", dest="jacobian", default=None,
                       help="Only use the SNe from the JLA sample")

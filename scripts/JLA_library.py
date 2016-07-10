@@ -116,13 +116,15 @@ def get_full_path(path):
 def survey(sn):
     """ assigns SN to sample; works for both formats of sn['name'] (list or str)
     """
+    # This will eventually fail as SN names will change with the survey
     if len(sn['name']) > 1:
         name = sn['name']
     else:
         name = sn['name'][0]
+    SNLS=['D1', 'D2', 'D3', 'D4']
     if name[0:4] == 'SDSS':
         return 'SDSS'
-    elif name[2:4] in ['D1', 'D2', 'D3', 'D4']:
+    elif name[2:4] in SNLS or name[0:] in SNLS:
         return 'SNLS'
     elif name[0:2] == 'sn':
         return 'nearby'
@@ -431,19 +433,19 @@ def smooth(x,y,width=11):
     med2=numpy.append(med2,numpy.median(y[z][-1.0 * (y.size % width):]))
 
     # Now, add the first and last points
-    # There is a danger in using the first and last points to define the ends of the spline.
-    # These areas will be noisier. 
+    # To ensure that these points do not have too much weight, we simply set them to have the values
+    # of the neighbouring point
     med1=numpy.append(x[z[0]],med1)
     med1=numpy.append(med1,x[z[-1]])
-    med2=numpy.append(y[z[0]],med2)
-    med2=numpy.append(med2,y[z[-1]])
+    med2=numpy.append(med2[0],med2)
+    med2=numpy.append(med2,med2[-1])
    
     # Fit a spline curve to these points
     tck = interpolate.splrep(med1, med2, s=0)
     # Examine the noise around the best spline fit
     # residual=(y[z]-interpolate.splev(x[z],tck,der=0))**2.
     result=interpolate.splev(x,tck,der=0)
-    forPlotting=[med1,interpolate.splev(med1,tck,der=0)]
+    forPlotting=[med1,med2]
     return forPlotting,result
  
 def smoothJLA():

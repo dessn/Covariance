@@ -31,9 +31,9 @@ def compute_date_of_max(options):
 
     for SN in SNe:
         SNfile='lc-'+SN['name']+'.list'
+        #print 'Examining %s' % SN['name']
         inputFile=lightCurves+SNfile
         outputFile=adjlightCurves+SNfile
-
         # If needed refit the lightcurve and insert the date of maximum into the input file
         JLA.insertDateOfMax(SN['name'].strip(),inputFile,outputFile,options.force)
 

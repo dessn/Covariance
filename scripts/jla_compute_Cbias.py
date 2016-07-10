@@ -85,7 +85,7 @@ def compute_bias(options):
                                              bias[selection]['redshift'],
                                              bias[selection]['e_bias'],
                                              'poly'), full_output=1)
-#
+
         if plsq[4] in [1,2,3,4]:
             print 'Solution for %s found' % (sample)
 
@@ -132,7 +132,10 @@ def compute_bias(options):
         # We assume 100% correlation between SNe
         for i,SN in enumerate(SNe):
             if JLA.survey(SN) == sample:
-                redshift = SN['zcmb']
+                if SN['zcmb'] > 0:
+                    redshift = SN['zcmb']
+                else:
+                    redshift = SN['zhel']
                 vect = numpy.matrix([1,redshift,redshift**2.])
                 if poly(redshift,plsq[0]) > 0:
                     sign = 1
@@ -140,6 +143,7 @@ def compute_bias(options):
                     sign = -1
 
                 SNe['e_bias'][i] = sign * thresh * numpy.sqrt(chisq / dof * (vect*numpy.matrix(plsq[1])*vect.T)[0,0])
+                # We are getting some unrealistcally large values
 
     if options.plot:
         ax.legend()
