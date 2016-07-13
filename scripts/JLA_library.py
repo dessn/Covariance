@@ -441,7 +441,7 @@ def smooth(x,y,width=11):
     med2=numpy.append(med2,med2[-1])
    
     # Fit a spline curve to these points
-    print len(med1), len(med2) ## too short for cubic spline for high-z sample
+    ## print len(med1), len(med2) ## too short for cubic spline for high-z sample
     tck = interpolate.splrep(med1, med2, s=0)
     # Examine the noise around the best spline fit
     # residual=(y[z]-interpolate.splev(x[z],tck,der=0))**2.

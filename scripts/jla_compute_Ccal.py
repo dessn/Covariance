@@ -177,7 +177,7 @@ def compute_Ccal(options):
         # We roughly follow the method descibed in the footnote of p13 of B14
         # Note that HST is smoothed as well.
         nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11} 
-        for sample in ['SNLS','SDSS','nearby','high-z']:
+        for sample in ['SNLS','SDSS','nearby']:
             selection=(SNeList['survey']==sample)
             J_sample=J[numpy.repeat(selection,3)]
 
