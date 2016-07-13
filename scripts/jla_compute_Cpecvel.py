@@ -5,14 +5,14 @@ need to specify the list of SNe and
 lightcurve fit parameters (if not subset of JLA)
 """
 
-import time
 from optparse import OptionParser
 import numpy as np
 import astropy.io.fits as fits
 import JLA_library as JLA
-from astropy.table import Table
 
-from astropysics.coords import ICRSCoordinates, GalacticCoordinates
+from astropy.table import Table
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 def sin_d(x):
     """ sine in degrees for convenience """
@@ -27,7 +27,7 @@ def dmdz(z):
     return 5./(np.log(10)*z)
 
 class VelocityCorrection(object):
-    """ functions to do stuff ?? with 2M++ velocity field (Carrick+ 2015) """
+    """ functions to correct for peculiar velocities using 2M++ velocity field (Carrick+ 2015) """
 
     def __init__(self, velfield):
         """ sets up constants and velocity field; includes:
@@ -99,15 +99,15 @@ class VelocityCorrection(object):
         z_value, z_err = [], []
 
         for sn in SNe:
-            coords = ICRSCoordinates(sn['ra'], sn['dec'])
-            gcoords = coords.convert(GalacticCoordinates)
-            vpec = self.lookup_velocity(sn['zhel'], gcoords.l.d, gcoords.b.d)
-            z_c = self.correct_redshift(sn['zhel'], vpec, gcoords.l.d, gcoords.b.d)
+            c = SkyCoord(sn['ra']*u.degree, sn['dec']*u.degree)
+            gc = c.galactic
+            vpec = self.lookup_velocity(sn['zhel'], gc.l.degree, gc.b.degree)
+            z_c = self.correct_redshift(sn['zhel'], vpec, gc.l.degree, gc.b.degree)
             z_value.append(z_c)
             z_plus = self.correct_redshift(sn['zhel'], self.r_plus*vpec,
-                                           gcoords.l.d, gcoords.b.d)
+                                           gc.l.degree, gc.b.degree)
             z_minus = self.correct_redshift(sn['zhel'], self.r_minus*vpec,
-                                            gcoords.l.d, gcoords.b.d)
+                                            gc.l.degree, gc.b.degree)
             z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
 
         if to_write:
@@ -149,10 +149,8 @@ if __name__ == '__main__':
     SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
-    # Modified to take into account the names used for the photometric sample.
-    # SN_list = [name.split('-')[1].split('.')[0] for name in SN_list_long]
-    SN_list = [name.replace('lc-','').replace('.list','') for name in SN_list_long]
-    
+    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
+  
     SN_indices = JLA.reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
 
@@ -162,6 +160,6 @@ if __name__ == '__main__':
 
     C_pecvel = vel_correction.covmat_pecvel(SN_data)
 
-    date =  JLA.get_date()
+    date = JLA.get_date()
 
     fits.writeto('C_pecvel_%s.fits' % date, np.array(C_pecvel), clobber=True)
