@@ -176,10 +176,9 @@ def compute_Ccal(options):
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
         # Note that HST is smoothed as well.
-        nPoints={'SNLS':11,'SDSS':11,'nearby':11,'highz':11}
-        for sample in ['SNLS','SDSS','nearby','highz']:
+        nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11} 
+        for sample in ['SNLS','SDSS','nearby','high-z']:
             selection=(SNeList['survey']==sample)
-            #selection == [JLA.survey(sn) == sample for sn in SNe]
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
@@ -187,6 +186,7 @@ def compute_Ccal(options):
                 # There is probably a better way
                 redshifts=numpy.array([z[0] for z in SNeList[selection]['z']])
                 derivatives_mag=J_sample[0::3][:,sys]  # [0::3] = [0,3,6 ...] Every 3rd one
+                #print redshifts.shape, derivatives_mag.shape, nPoints[sample]
                 forPlotting_mag,res_mag=JLA.smooth(redshifts,derivatives_mag,nPoints[sample])
                 derivatives_x1=J_sample[1::3][:,sys]
                 forPlotting_x1,res_x1=JLA.smooth(redshifts,derivatives_x1,nPoints[sample])
@@ -257,7 +257,7 @@ if __name__ == '__main__':
                       help="Output file name")
 
     parser.add_option("-j", "--jacobian", dest="jacobian", default=None,
-                      help="Only use the SNe from the JLA sample")
+                      help="Existing smoothed Jacobian to use")
 
     parser.add_option("-P", "--Plot", dest="Plot", default=False,
                       action='store_true',
@@ -267,12 +267,12 @@ if __name__ == '__main__':
                       action='store_false',
                       help="Do not smooth the Jacobian")
 
-    parser.add_option("-s", "--SNlist", dest="SNlist", 
+    parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
 
     parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
-    
+
     (options, args) = parser.parse_args()
 
 
