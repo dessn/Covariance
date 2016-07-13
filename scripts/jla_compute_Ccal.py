@@ -7,7 +7,7 @@ import JLA_library as JLA
 import numpy as np
 
 # Usage
-# JLA_computeCcal_mp.py opitons
+# JLA_computeCcal.py opitons
 # 
 
 def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
