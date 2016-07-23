@@ -19,8 +19,12 @@ def compute_ZP(options):
     filt=JLA.filterCurve(JLA.get_full_path(params['filterDir'])+options.filter)
 
     # Compute the ZP
+    if options.system=='AB':
+        print '%s in %s %s %5.3f' % (options.standard,options.filter,options.system,filt.AB(standard))
+    else:
+        pass
+#        print '%s in %s %s %5.3f' % (options.standard,options.filter,options.system,filt.Vega(standard))
 
-    print '%s in %s %s %5.3f' % (options.standard,options.filter,options.system,filt.AB(standard))
 
     return
 
