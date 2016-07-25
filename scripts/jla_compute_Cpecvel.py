@@ -103,13 +103,17 @@ class VelocityCorrection(object):
             gc = c.galactic
             vpec = self.lookup_velocity(sn['zhel'], gc.l.degree, gc.b.degree)
             z_c = self.correct_redshift(sn['zhel'], vpec, gc.l.degree, gc.b.degree)
-            z_value.append(z_c)
             z_plus = self.correct_redshift(sn['zhel'], self.r_plus*vpec,
                                            gc.l.degree, gc.b.degree)
             z_minus = self.correct_redshift(sn['zhel'], self.r_minus*vpec,
                                             gc.l.degree, gc.b.degree)
-            z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
-
+            if JLA.survey(sn) == 'nearby':
+                z_value.append(z_c)
+                z_err.append(np.mean([z_plus - z_c, z_c - z_minus]))
+            else:
+                z_value.append(sn['zcmb'])
+                z_err.append(0)
+                
         if to_write:
             np.savetxt('z_CMB_corrected.txt', np.array(z_value))
         return z_value, z_err
