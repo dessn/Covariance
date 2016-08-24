@@ -9,12 +9,14 @@ from optparse import OptionParser
 # The idea is to simulate SNe data sets according to specific SNe Ia models, train SALT2.4 with a
 # training sample derived from that model and then fit a test sample derived from that model.
 # They use the models in M14 that lead to the largest Hubble diagram bias. This is the  G10' - C11 model
-# There are two approaches here. Use the fit to w (and Om) to estimate the offset in the distance modulus. Table 7.
-# Use Fig 16 directly.
+# There are two approaches to computing the uncertainty here. 
+# i) Use the fit to w (and Om) to estimate the offset in the distance modulus, Table 7,
+#
+# ii) Use Fig 16 directly.
 
-# We use the first approach. The limitation here is that Om does not vary.
+# We use the second approach, as this is the one used in the JLA
 # G10'-C11-REAL-REAL => Based on the G10' input model with C11 intrinsic scatter trained 
-#                       on real data and ...
+# This is the bottom left plot in FIg. 16 of Mosher et al. 2014, ApJ, 793, 16
 
 
 def compute_model(options):
@@ -24,7 +26,7 @@ def compute_model(options):
     import JLA_library as JLA
     from astropy.table import Table
     from astropy.cosmology import FlatwCDM
-
+    from scipy.interpolate import interp1d
 
 
     # -----------  Read in the configuration file ------------
@@ -46,21 +48,23 @@ def compute_model(options):
 
     print 'There are %d SNe' % (nSNe)
 
-    #z=numpy.array([])
-    #offset=numpy.array([])
-    Om_0=0.303 # JLA value in the wCDM model
-
-    cosmo1 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=Om_0, w0=-1.0)
-    cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=Om_0, w0=-1.024)
-    
     # For the JLA SNe
     redshift = SNe['zcmb']
     replace=(redshift < 0)
     # For the non JLA SNe
     redshift[replace]=SNe[replace]['zhel']
 
-    Delta_M=5*numpy.log10(cosmo1.luminosity_distance(redshift)/cosmo2.luminosity_distance(redshift))
-
+    if options.raw:
+        # Data from the bottom left hand figure of Mosher et al. 2014.
+        # This is option ii) that is descibed above
+        offsets=Table.read(JLA.get_full_path(params['modelOffset']),format='csv')
+        Delta_M=interp1d(offsets['z'], offsets['offset'], kind='linear',bounds_error=False,fill_value='extrapolate')(redshift)
+    else:
+        Om_0=0.303 # JLA value in the wCDM model
+        cosmo1 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=Om_0, w0=-1.0)
+        cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=Om_0, w0=-1.024)
+        Delta_M=5*numpy.log10(cosmo1.luminosity_distance(redshift)/cosmo2.luminosity_distance(redshift))
+    
     # Build the covariance matrix. Note that only magnitudes are affected
     Zero=numpy.zeros(nSNe)
     H=numpy.concatenate((Delta_M,Zero,Zero)).reshape(3,nSNe).ravel(order='F')
@@ -83,6 +87,10 @@ if __name__ == '__main__':
 
     PARSER.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
+
+    PARSER.add_option("-r", "--raw", dest="raw", default=True,
+                      help="Use the raw data points")
+
     
     (options, args) = PARSER.parse_args()
 

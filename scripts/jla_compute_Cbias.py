@@ -71,7 +71,6 @@ def compute_bias(options):
                                   dtype='S10,f8,f8,f8',
                                   names=['sample', 'redshift', 'bias', 'e_bias'])
 
-    
     if options.plot:
         fig=plt.figure()
         ax=fig.add_subplot(111)
@@ -113,8 +112,8 @@ def compute_bias(options):
         # Compute the upper alpha/2 vallue for the student t distribution with dof
         thresh=t.ppf((1-alpha/2.0), dof)
         
-        if options.plot:
-            # The following is only valid for polynomial fitting functions
+        if options.plot and sample!='nearby':
+            # The following is only valid for polynomial fitting functions, and we do not compute it for the nearby sample
             upper_curve=[]
             lower_curve=[]
             for x in z:
@@ -123,43 +122,51 @@ def compute_bias(options):
                 upper_curve.append(poly(x,plsq[0])+offset)
                 lower_curve.append(poly(x,plsq[0])-offset)
 
+            # This does not seem to work for nearby SNe
             ax.plot(z,lower_curve,'--',color=colour[sample])
             ax.plot(z,upper_curve,'--',color=colour[sample])
 
         # Compute the error in the bias
-        # We increase the absolute vlaue
+        # We increase the absolute value
         # In other words, if the bias is negative, we subtract the error to make it even more negative
+        # This is to get the correct sign in the off diagonal elements
         # We assume 100% correlation between SNe
         for i,SN in enumerate(SNe):
+            if SN['zcmb'] > 0:
+                redshift = SN['zcmb']
+            else:
+                redshift = SN['zhel']
             if JLA.survey(SN) == sample:
-                if SN['zcmb'] > 0:
-                    redshift = SN['zcmb']
+                # For the nearby SNe, the uncertainty in the bias correction is the bias correction itself
+                if sample=='nearby':
+                    SNe['e_bias'][i]=poly(redshift,plsq[0])
+                    #print SN['name'],redshift, SNe['e_bias'][i]
                 else:
-                    redshift = SN['zhel']
-                vect = numpy.matrix([1,redshift,redshift**2.])
-                if poly(redshift,plsq[0]) > 0:
-                    sign = 1
-                else:
-                    sign = -1
+                    vect = numpy.matrix([1,redshift,redshift**2.])
+                    if poly(redshift,plsq[0]) > 0:
+                        sign = 1
+                    else:
+                        sign = -1
 
-                SNe['e_bias'][i] = sign * thresh * numpy.sqrt(chisq / dof * (vect*numpy.matrix(plsq[1])*vect.T)[0,0])
+                    SNe['e_bias'][i] = sign * thresh * numpy.sqrt(chisq / dof * (vect*numpy.matrix(plsq[1])*vect.T)[0,0])
+
                 # We are getting some unrealistcally large values
+
+    date = JLA.get_date()
 
     if options.plot:
         ax.legend()
-        plt.show()
+        plt.savefig('C_bias_%s.png' % (date))
         plt.close()
 
     # Compute the bias matrix
     # 
 
-    date = JLA.get_date()
     Zero=numpy.zeros(nSNe)
     H=numpy.concatenate((SNe['e_bias'],Zero,Zero)).reshape(3,nSNe).ravel(order='F')
+    C_bias = numpy.matrix(H).T * numpy.matrix(H)
 
-    C_bias = numpy.matrix(H)
-
-    fits.writeto('C_bias_%s.fits' % (date),C_bias.T*C_bias,clobber=True) 
+    fits.writeto('C_bias_%s.fits' % (date),C_bias,clobber=True) 
 
     return None
 
