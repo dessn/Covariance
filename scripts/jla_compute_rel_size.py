@@ -89,12 +89,12 @@ def compute_rel_size(options):
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
 
-    nSNe=len(SNe)
-    print 'There are %d SNe in this sample' % (nSNe)
-
     # sort it to match the listing in options.SNlist
     indices = JLA.reindex_SNe(SNeList['id'], SNe)        
     SNe=SNe[indices]
+
+    nSNe=len(SNe)
+    print 'There are %d SNe in this sample' % (nSNe)
 
     # ---------- Compute the Jacobian ----------------------
     # The Jacobian is an m by 4 matrix, where m is the number of SNe
