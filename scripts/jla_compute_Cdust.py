@@ -33,7 +33,7 @@ def compute_dust(options):
     for SN in SNelist:
         inputFile = SN['lc']
         print 'Fitting %s' % (SN['id'])
-        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset)
+        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, options.workArea)
         j.extend([dm, dx1, dc])
     
     cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0
@@ -53,6 +53,9 @@ if __name__ == '__main__':
 
     PARSER.add_option("-s", "--SNlist", dest="SNlist", 
                   help="List of SN")
+        
+    PARSER.add_option("-w", "--workArea", dest="workArea", default="../workArea",
+                      help="Work area that stores the light curve fits")
 
     (OPTIONS, ARGS) = PARSER.parse_args()
 

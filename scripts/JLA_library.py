@@ -270,7 +270,6 @@ def getDateOfMax(inputFile):
 
 def insertDateOfMax(SN, inputFile, outputFile, force=False):
     # If the date of Max is already included skip
-    # haven't include salt_prefix argument yet; will do so when need to BZ
 
     try:
         os.mkdir('workArea')
@@ -332,14 +331,14 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
 
     return None
 
-def compute_extinction_offset(SN, inputFile, offset, salt_prefix=''):
+def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     # Write the result and the covariance matrix to the area you want to work in
     try:
-        os.mkdir('workArea')
+        os.mkdir(workArea)
     except:
         pass
     cwd=os.getcwd()
-    workArea='workArea/'+SN
+    workArea=workArea + '/' + SN
     try:
         os.mkdir(workArea)
     except:
