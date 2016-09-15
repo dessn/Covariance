@@ -20,8 +20,16 @@ def compute_dust(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNelist):
-        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('.list','')
+        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('.list','').replace('.DAT','')
 
+    # -----------  Read in the configuration file ------------
+
+    params=JLA.build_dictionary(options.config)
+    try:
+        salt_prefix = params['saltPrefix']
+    except KeyError:
+        salt_prefix = ''
+        
     # -----------   The lightcurve fitting -------------------
 
     # Compute the offset between the nominal value of the extinciton 
@@ -33,7 +41,8 @@ def compute_dust(options):
     for SN in SNelist:
         inputFile = SN['lc']
         print 'Fitting %s' % (SN['id'])
-        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, options.workArea)
+        workArea = JLA.get_full_path(options.workArea)
+        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_prefix)
         j.extend([dm, dx1, dc])
     
     cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0

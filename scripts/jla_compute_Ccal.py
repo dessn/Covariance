@@ -16,8 +16,7 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     # Set up the path to the SALT model and the name of the outputFile
     #print SALTpath
     os.environ['SALTPATH']=SALTpath+SALTmodel['directory']+'/snfit_data/'
-    outputFile=options.workArea+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
-
+    outputFile=JLA.get_full_path(options.workArea)+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
     if os.path.isfile(outputFile):
         pass
 #        print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
@@ -57,7 +56,7 @@ def compute_Ccal(options):
 
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('.DAT', '')
 
         
     # ----------  Read in the SN light curve fits ------------

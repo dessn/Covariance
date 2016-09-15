@@ -81,6 +81,10 @@ def compute_nonIa(options):
     for i, SN in enumerate(SNe):
         if SN['source'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
             SNe['eval'][i] = True
+        # try do the same for DES
+        elif SN['source'][0] == 'DES':
+            SNe['eval'][i] = True
+            
 
     # Work out which redshift bin each SNe belongs to
     # In numpy.digitize, the bin number starts at 1, so we subtract 1
