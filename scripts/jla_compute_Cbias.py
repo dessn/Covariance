@@ -48,11 +48,10 @@ def compute_bias(options):
     nSNe = len(SNeList)
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
-        
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('.DAT', '').replace('DES_0', '')
+
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
-
     print 'There are %d SNe' % (nSNe)
 
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
