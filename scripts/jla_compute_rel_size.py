@@ -22,6 +22,7 @@ def add_covar_matrices(covmatrices,diag):
     # Read in the covariance matrices
     matrices = []
     for matrix in covmatrices:
+#        print matrix, fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0).shape
         matrices.append(fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0))
         # Test for NaNs and replace them with zero
         if numpy.isnan(matrices[-1]).any():
@@ -82,7 +83,7 @@ def compute_rel_size(options):
     SNeList=numpy.genfromtxt(options.SNlist,usecols=(0,2),dtype='S30,S200',names=['id','lc'])
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','').replace('DES_0', '').replace('.DAT', '')
 
     # -----------  Read in the data JLA --------------------------
 
@@ -125,16 +126,17 @@ def compute_rel_size(options):
 
     # Set up the covariance matrices
 
-    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
+    systematic_terms = ['bias', #'cal',
+                        'host', 'dust', 'model', 'nonia', 'pecvel']#, 'stat']
 
     covmatrices = {'bias':params['bias'],
-                   'cal':params['cal'],
+                  # 'cal':params['cal'],
                    'host':params['host'],
                    'dust':params['dust'],
                    'model':params['model'],
                    'nonia':params['nonia'],
-                   'pecvel':params['pecvel'],
-                   'stat':params['stat']}
+                   'pecvel':params['pecvel']}#,
+                   #'stat':params['stat']}
 
 
     if options.type in systematic_terms:

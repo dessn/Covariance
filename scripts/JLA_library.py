@@ -122,6 +122,8 @@ def survey(sn):
     else:
         name = sn['name'][0]
     SNLS=['D1', 'D2', 'D3', 'D4']
+    #if name[0:3] == 'DES':
+    #    return 'DES'
     if name[0:4] == 'SDSS':
         return 'SDSS'
     elif name[2:4] in SNLS or name[0:] in SNLS:
