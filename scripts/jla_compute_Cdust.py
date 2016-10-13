@@ -20,7 +20,7 @@ def compute_dust(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNelist):
-        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('.list','').replace('.DAT','')
+        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('.list','')
 
     # -----------  Read in the configuration file ------------
 

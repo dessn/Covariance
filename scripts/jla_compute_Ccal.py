@@ -56,7 +56,7 @@ def compute_Ccal(options):
 
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('.DAT', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
         
     # ----------  Read in the SN light curve fits ------------

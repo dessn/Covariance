@@ -179,7 +179,6 @@ def fitLC(inputFile, outputFile, salt_prefix=''):
     calls snfit (can specify path to executable)
     """
     cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
-    #xprint cmd
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)

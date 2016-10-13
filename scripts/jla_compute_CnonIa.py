@@ -61,7 +61,7 @@ def compute_nonIa(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('DES_0', '').replace('.DAT', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
@@ -79,10 +79,10 @@ def compute_nonIa(options):
     # Identify the SNLS SNe in the JLA sample
 
     for i, SN in enumerate(SNe):
-        if SN['source'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
+        if SN['set'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
             SNe['eval'][i] = True
         # try do the same for DES
-        elif SN['source'][0] == 'DES':
+        elif SN['set'][0] == 'DES':
             SNe['eval'][i] = True
             
 
