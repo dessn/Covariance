@@ -83,7 +83,7 @@ def compute_rel_size(options):
     SNeList=numpy.genfromtxt(options.SNlist,usecols=(0,2),dtype='S30,S200',names=['id','lc'])
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','').replace('DES_0', '').replace('.DAT', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','')
 
     # -----------  Read in the data JLA --------------------------
 
@@ -91,7 +91,9 @@ def compute_rel_size(options):
     SNe = Table.read(lcfile, format='fits')
 
     # sort it to match the listing in options.SNlist
-    indices = JLA.reindex_SNe(SNeList['id'], SNe)        
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    print SNe
+    print indices
     SNe=SNe[indices]
 
     nSNe=len(SNe)
@@ -126,17 +128,16 @@ def compute_rel_size(options):
 
     # Set up the covariance matrices
 
-    systematic_terms = ['bias', #'cal',
-                        'host', 'dust', 'model', 'nonia', 'pecvel']#, 'stat']
+    systematic_terms = ['bias', 'cal', 'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
     covmatrices = {'bias':params['bias'],
-                  # 'cal':params['cal'],
+                   'cal':params['cal'],
                    'host':params['host'],
                    'dust':params['dust'],
                    'model':params['model'],
                    'nonia':params['nonia'],
-                   'pecvel':params['pecvel']}#,
-                   #'stat':params['stat']}
+                   'pecvel':params['pecvel'],
+                   'stat':params['stat']}
 
 
     if options.type in systematic_terms:
