@@ -135,6 +135,8 @@ def survey(sn):
     else:
         name = sn['name'][0]
     SNLS=['D1', 'D2', 'D3', 'D4']
+    #if name[0:3] == 'DES':
+    #    return 'DES'
     if name[0:4] == 'SDSS':
         return 'SDSS'
     elif name[2:4] in SNLS or name[0:] in SNLS:
@@ -190,7 +192,6 @@ def fitLC(inputFile, outputFile, salt_prefix=''):
     calls snfit (can specify path to executable)
     """
     cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
-    #xprint cmd
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)

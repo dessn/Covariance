@@ -7,7 +7,7 @@ import astropy.io.fits as fits
 import JLA_library as JLA
 from astropy.table import Table
 
-coh_dict = {'SDSS': 0.108, 'SNLS': 0.08, 'nearby': 0.134, 'high-z': 0.1}
+coh_dict = {'SDSS': 0.108, 'SNLS': 0.08, 'nearby': 0.134, 'high-z': 0.1, 'DES': 0.1}
 
 def compute_diag(SNe):
     lens = 0.055
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
-    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
+    SN_list = [name.replace('lc-', '').replace('.list', '').replace('DES_0', '').replace('.DAT', '') for name in SN_list_long]
 
     SN_indices = JLA.reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
