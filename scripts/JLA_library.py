@@ -6,19 +6,23 @@ import time
 
 class filterCurve:
     """A filter"""
-    def __init__(self,filterCurve):
-        f=open(filterCurve,'r')
-        wave=[]
-        trans=[]
-        for line in f.readlines():
-            if line[0]!='#':
-                entries=line.split()
-                wave.append(float(entries[0])) # We use Angstroms for the wavelength in the filter transmission file
-                trans.append(float(entries[1]))
-        f.close()
-        self.wave=numpy.array(wave)        
-        self.trans=numpy.array(trans)
-        
+    def __init__(self,arg1,arg2=None):
+        if arg2==None:
+            f=open(arg1,'r')
+            wave=[]
+            trans=[]
+            for line in f.readlines():
+                if line[0]!='#':
+                    entries=line.split()
+                    wave.append(float(entries[0])) # We use Angstroms for the wavelength in the filter transmission file
+                    trans.append(float(entries[1]))
+            f.close()
+            self.wave=numpy.array(wave)        
+            self.trans=numpy.array(trans)
+        else:
+            self.wave=numpy.array(arg1)        
+            self.trans=numpy.array(arg2)
+
         return
 
     def flux(self,spectrum,offset=0):
@@ -42,6 +46,15 @@ class filterCurve:
         int1=flux * trans * wave / h / c
         int2= 3631e-23 * trans / wave / h
         return -2.5*numpy.log10(int1.sum() / int2.sum())
+
+    def eff(self):
+        # Assume a flat spectrum
+        step=1.0
+        wave=numpy.arange(numpy.min(self.wave),numpy.max(self.wave),step)
+        trans=interpolate.interp1d(self.wave,self.trans)(wave)
+        int1=trans * wave
+        int2=trans
+        return int1.sum() / int2.sum()
 
 class spectrum:
     """A spectrum"""
@@ -97,7 +110,7 @@ def reindex_SNe(snlist, data):
     """ list of indices to reindex the data so that it matches the list of SNe """
     indices = []
     for sn in snlist:
-        indices.append([i for i in range(len(data)) if data['name'][i] == sn])
+        indices.append([i for i in range(len(data)) if data['name'][i].strip() == sn.strip()])
     return indices
                     
 def get_date():
