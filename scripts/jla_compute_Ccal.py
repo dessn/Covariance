@@ -173,8 +173,9 @@ def compute_Ccal(options):
             pass               
 
     nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
-    sampleList=['nearby','DES']
-
+#    sampleList=['nearby','DES']
+    sampleList=params['smoothList'].split(',')
+    print sampleList
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
@@ -211,10 +212,14 @@ def compute_Ccal(options):
                     ax3=fig.add_subplot(313)
                     ax1.plot(redshifts,derivatives_mag,'bo')
                     ax1.plot(forPlotting_mag[0],forPlotting_mag[1],'r-')
+                    ax1.set_ylabel('mag')
                     ax2.plot(redshifts,derivatives_x1,'bo')
                     ax2.plot(forPlotting_x1[0],forPlotting_x1[1],'r-')
+                    ax2.set_ylabel('x1')
                     ax3.plot(redshifts,derivatives_c,'bo')
                     ax3.plot(forPlotting_c[0],forPlotting_c[1],'r-')
+                    ax3.set_ylabel('c')
+                    ax3.set_xlabel('z')
         
                     plt.savefig('figures/%s_sys_%d.png' % (sample,sys))
                     plt.close()

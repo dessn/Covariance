@@ -78,12 +78,17 @@ def compute_nonIa(options):
     nSNe = len(SNe)
     # Identify the SNLS SNe in the JLA sample
 
+    # We use the source name to decide if we want to add corrections for non-Ia contamination
     for i, SN in enumerate(SNe):
-        if SN['set'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
+        if SN['source'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
             SNe['eval'][i] = True
+            print SN['source'][0],SN['name'][0]
+        elif SN['source'][0]== 'Phot_Uddin' and (SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4'] or (SN['name'][0][0:2] in ['D1', 'D2', 'D3', 'D4'])):
+            SNe['eval'][i] = True
+            print SN['source'][0],SN['name'][0]
         # try do the same for DES
-        elif SN['set'][0] == 'DES':
-            SNe['eval'][i] = True
+#        elif SN['set'][0] == 'DES':
+#            SNe['eval'][i] = True
             
 
     # Work out which redshift bin each SNe belongs to

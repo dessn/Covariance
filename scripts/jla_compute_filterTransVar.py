@@ -24,6 +24,7 @@ def compute_filterTransVar(options):
 
     print 'Examined the transmission curves for %d CCDs' % (len(eff))
     print 'Mean effective wavelength is %6.1f' % (numpy.mean(eff))
+    print 'Range of effective wavelength is %6.1f-%6.1f' % (numpy.min(eff),numpy.max(eff))
     print 'RMS effective wavelength %6.1f' % (numpy.std(eff))
 
     return
