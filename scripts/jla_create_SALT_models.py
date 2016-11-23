@@ -24,7 +24,7 @@ def offsetFilter(filt,instrument):
     f.write(filt,format='ascii.fast_no_header')
     return
 
-def offsetZP(magsys,filt,instrument):
+def offsetZP(magsys,filt,instrument,fitmodel):
     # We loose the @ symbol with the Table object, so we do it by editing the file directly
     print 'Modifying %s %s in %s' % (instrument,filt,magsys)
     f=open(magsys,'r')
@@ -115,13 +115,16 @@ def create_Models(options):
         # Copy accross the base model
         shutil.copytree(JLA.get_full_path(model['baseModel']),options.output+'/'+model['modelNumber'])
         print 'Creating %s' % (model['modelNumber'])
+
         # Copy salt2 directory to salt2-4
         shutil.copytree(options.output+'/'+model['modelNumber']+'/snfit_data/salt2',options.output+'/'+model['modelNumber']+'/snfit_data/salt2-4')
+
         # Remove the old base instrument, if it exists and replace it with a new one
         try:
             shutil.rmtree(options.output+'/'+model['modelNumber']+'/snfit_data/'+model['fitmodel'])
         except:
             pass
+
         shutil.copytree(JLA.get_full_path(model['baseInstrument']+model['fitmodel']),options.output+'/'+model['modelNumber']+'/snfit_data/'+model['fitmodel'])
 
         # Remove the old MagSys directory and replace it with the new one
@@ -135,9 +138,10 @@ def create_Models(options):
         if model['Type']=='filt':
             offsetFilter(options.output+'/'+model['modelNumber']+'/snfit_data/'+model['fitmodel']+'/'+model['Filter'],model['Instrument'])
         else:
-            offsetZP(options.output+'/'+model['modelNumber']+'/snfit_data/MagSys/'+model['MagSys'],model['ShortName'],model['Instrument'])
+            offsetZP(options.output+'/'+model['modelNumber']+'/snfit_data/MagSys/'+model['MagSys'],model['ShortName'],model['Instrument'],model['fitmodel'])
 
-        # There is the potential of overwriting what one saves, so care is neeed
+        # We now update the list of instruments in the newly created surfaces
+        # We should try to generalise this, as this will become very complex as more instruments are added.
         if model['Instrument']=='DECAM':
             # Update just the Keplercam instrument files
             updateKeplercam(options,params,model)
@@ -170,7 +174,7 @@ if __name__ == '__main__':
                       help="List of instruments/filters to add")
 
     parser.add_option("-o", "--output", dest="output", default=None,
-                      help="outpur model")
+                      help="output model")
 
     (options, args) = parser.parse_args()
 

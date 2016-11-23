@@ -1,6 +1,9 @@
 """Pythom program to compute the systematic unsertainty related to
 the contamimation from Ibc SNe"""
 
+# 20161121
+# Revised to accept input for the JLA++host sample
+
 from optparse import OptionParser
 
 def compute_nonIa(options):
@@ -74,22 +77,21 @@ def compute_nonIa(options):
     
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
+    print len(indices)
 
     nSNe = len(SNe)
     # Identify the SNLS SNe in the JLA sample
-
-    # We use the source name to decide if we want to add corrections for non-Ia contamination
+    # We use the source and the name to decide if we want to add corrections for non-Ia contamination
+    # If the source keyword does not exist, we skip the correction
     for i, SN in enumerate(SNe):
-        if SN['source'][0] == 'JLA' and SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4']:
-            SNe['eval'][i] = True
-            print SN['source'][0],SN['name'][0]
-        elif SN['source'][0]== 'Phot_Uddin' and (SN['name'][0][2:4] in ['D1', 'D2', 'D3', 'D4'] or (SN['name'][0][0:2] in ['D1', 'D2', 'D3', 'D4'])):
-            SNe['eval'][i] = True
-            print SN['source'][0],SN['name'][0]
-        # try do the same for DES
-#        elif SN['set'][0] == 'DES':
-#            SNe['eval'][i] = True
-            
+        try:
+            if (SN['source'] == 'JLA' or SN['source'] == 'SNLS_spec') and SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4']:
+                SNe['eval'][i] = True
+            elif (SN['source']== 'SNLS_photo') and (SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4'] or (SN['name'][0:2] in ['D1', 'D2', 'D3', 'D4'])):
+                SNe['eval'][i] = True
+                print SN['source'],SN['name']
+        except:
+            pass
 
     # Work out which redshift bin each SNe belongs to
     # In numpy.digitize, the bin number starts at 1, so we subtract 1

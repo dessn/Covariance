@@ -16,10 +16,22 @@ parser.add_option("-c", "--config", dest="config", default='DES.config',
 parser.add_option("-o", "--output", dest="output", default='DES.list',
                   help="configuration file")
 
-
-
-
 (options, args) = parser.parse_args()
+
+def modify(dst):
+    f=open(dst)
+    lines=f.readlines()
+    f.close()
+
+    # We overwrite the file
+    # You may want to do more checks than you do"
+    f=open(dst,"w")
+    for line in lines:
+        f.write(line.replace(" AB"," DES-AB"))
+    f.close()
+
+    return
+
 
 surveys={'DES':{'input':'DES_3yr_spec/forcePhoto/','output':'DES'},
          'CSP':{'input':'nearby/CSP/PS1s','output':'CSP'},
@@ -48,5 +60,8 @@ for survey in surveys.keys():
             SN_list.append(SN)
             file.write('%s LC %s\n'% (lightCurve,dst))
             shutil.copy(ori, dst)
+            # For DES SN, modify the magsys from AB to DES-AB
+            if survey=="DES":
+                modify(dst)
 
 file.close()

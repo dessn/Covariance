@@ -83,7 +83,7 @@ def compute_rel_size(options):
     SNeList=numpy.genfromtxt(options.SNlist,usecols=(0,2),dtype='S30,S200',names=['id','lc'])
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','').replace('DES_0', '').replace('.DAT', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','').replace('.DAT', '')
 
     # -----------  Read in the data JLA --------------------------
 
@@ -108,15 +108,20 @@ def compute_rel_size(options):
 
     cosmo1 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om'], w0=JLA_result['w'])
 
+    redshift = SNe['zcmb']
+    replace=(redshift < 0)
+    # For the non JLA SNe
+    redshift[replace]=SNe[replace]['zhel']
+
     # Varying Om
     cosmo2 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om']+offset['Om'], w0=JLA_result['w'])
-    J.append(5*numpy.log10((cosmo1.luminosity_distance(SNe['zcmb'])/cosmo2.luminosity_distance(SNe['zcmb']))[:,0]))
+    J.append(5*numpy.log10((cosmo1.luminosity_distance(redshift)/cosmo2.luminosity_distance(redshift))))
 
     # varying alpha
-    J.append(1.0*offset['alpha']*SNe['x1'][:,0])
+    J.append(1.0*offset['alpha']*SNe['x1'])
 
     # varying beta
-    J.append(-1.0*offset['beta']*SNe['color'][:,0])
+    J.append(-1.0*offset['beta']*SNe['color'])
 
     # varying M_B
 
@@ -126,17 +131,17 @@ def compute_rel_size(options):
 
     # Set up the covariance matrices
 
-    systematic_terms = ['bias', #'cal',
-                        'host', 'dust', 'model', 'nonia', 'pecvel']#, 'stat']
+    systematic_terms = ['bias', 'cal',
+                        'host', 'dust', 'model', 'nonia', 'pecvel', 'stat']
 
     covmatrices = {'bias':params['bias'],
-                  # 'cal':params['cal'],
+                   'cal':params['cal'],
                    'host':params['host'],
                    'dust':params['dust'],
                    'model':params['model'],
                    'nonia':params['nonia'],
-                   'pecvel':params['pecvel']}#,
-                   #'stat':params['stat']}
+                   'pecvel':params['pecvel'],
+                   'stat':params['stat']}
 
 
     if options.type in systematic_terms:
@@ -154,7 +159,7 @@ def compute_rel_size(options):
 
     Cinv=numpy.matrix(C).I
 
-
+    
     # Construct eta, a 3n vector
 
     eta=numpy.zeros(3*nSNe)

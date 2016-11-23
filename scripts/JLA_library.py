@@ -110,7 +110,7 @@ def reindex_SNe(snlist, data):
     """ list of indices to reindex the data so that it matches the list of SNe """
     indices = []
     for sn in snlist:
-        indices.append([i for i in range(len(data)) if data['name'][i].strip() == sn.strip()])
+        indices+=[i for i in range(len(data)) if data['name'][i].strip() == sn.strip()]
     return indices
                     
 def get_date():
@@ -135,8 +135,8 @@ def survey(sn):
     else:
         name = sn['name'][0]
     SNLS=['D1', 'D2', 'D3', 'D4']
-    #if name[0:3] == 'DES':
-    #    return 'DES'
+    if name[0:3] == 'DES':
+        return 'DES'
     if name[0:4] == 'SDSS':
         return 'SDSS'
     elif name[2:4] in SNLS or name[0:] in SNLS:

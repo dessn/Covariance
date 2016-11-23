@@ -102,6 +102,7 @@ def compute_Ccal(options):
 
     # -----------   Read in the calibration matrix -----------------
 
+
     Cal=fits.getdata(JLA.get_full_path(params['C_kappa']))
     # Multiply the ZP submatrix by 100^2, and the two ZP-offset matrices by 100,
     # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
@@ -175,7 +176,6 @@ def compute_Ccal(options):
     nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
 #    sampleList=['nearby','DES']
     sampleList=params['smoothList'].split(',')
-    print sampleList
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
@@ -188,7 +188,7 @@ def compute_Ccal(options):
             for sys in range(nSALTmodels):
                 # We need to convert to a numpy array
                 # There is probably a better way
-                redshifts=numpy.array([z[0] for z in SNeList[selection]['z']])
+                redshifts=numpy.array([z for z in SNeList[selection]['z']])
                 derivatives_mag=J_sample[0::3][:,sys]  # [0::3] = [0,3,6 ...] Every 3rd one
                 #print redshifts.shape, derivatives_mag.shape, nPoints[sample]
                 forPlotting_mag,res_mag=JLA.smooth(redshifts,derivatives_mag,nPoints[sample])

@@ -135,7 +135,7 @@ def compute_bias(options):
                 redshift = SN['zcmb']
             else:
                 redshift = SN['zhel']
-            if JLA.survey(SN) == sample:
+            if JLA.survey(SN) == sample or (JLA.survey(SN)=="DES" and sample=="SNLS"): # Temporary
                 # For the nearby SNe, the uncertainty in the bias correction is the bias correction itself
                 if sample=='nearby':
                     SNe['e_bias'][i]=poly(redshift,plsq[0])
