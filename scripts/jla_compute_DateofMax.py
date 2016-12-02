@@ -38,11 +38,11 @@ def compute_date_of_max(options):
             inputFile=lightCurves+SNfile
             outputFile=adjlightCurves+SNfile
         else:
-            inputFile=SN['lc'].replace('_adj','') # Temporary hack
-            outputFile=SN['lc']#.replace('forced','forced_adj')
+            inputFile=SN['lc']
+            outputFile=SN['lc'].replace('forced','forced_adj')
 
         print 'Examining %s' % SN['name']
-
+        print outputFile
         # If needed refit the lightcurve and insert the date of maximum into the input file
         JLA.insertDateOfMax(SN['name'].strip(),inputFile,outputFile,options.force)
 
