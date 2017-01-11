@@ -82,9 +82,12 @@ def create_Models(options):
     except:
         print "Directory %s already exists" % (options.output)
 
+    SALTmodels=Table.read(options.modelList,format='ascii')
+
     modelList=[]
     for model in os.listdir(JLA.get_full_path(options.base)): 
-        if 'list' not in model:
+        if model in SALTmodels['ID']:
+            print "Copying across %s" % model
             modelList.append(model)
             shutil.copytree(options.base+'/'+model,options.output+'/'+model)
             # Copy salt2 directory to salt2-4
@@ -101,12 +104,11 @@ def create_Models(options):
             # Update the CfA magnitude system
             shutil.copy(JLA.get_full_path(params['CfA_magsys']),options.output+'/'+model+'/snfit_data/MagSys/')
             # This is not needed for CSP as the instrument files and magnitude system have not chnaged since JLA
-
+        else:
+            print "Excluding %s" % model
 
 
     print 'We start with %d models from JLA' % (len(modelList))
-
-    # ToDo - remove models that are not required.
 
     # ---------  Add new models --------------
 
@@ -166,6 +168,9 @@ if __name__ == '__main__':
 
     parser.add_option("-b", "--base", dest="base", default=None,
                       help="base model surfaces")
+
+    parser.add_option("-m", "--modelList", dest="modelList", default="saltModels.list",
+                      help="list of models to keep")
 
     parser.add_option("-c", "--config", dest="config", default='DES.config',
                       help="configuration file")

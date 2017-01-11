@@ -1,13 +1,23 @@
 """Python program to compute C_K 
 """
 
+
 from optparse import OptionParser
 
 # Usage
 # JLA_computeCcal.py opitons
 # 
 # Written specifically for the JLA-like analysis of the DES spectroscopically confirmed sample
-# Includes the relevant columns from the 
+# For Y3A1, the calibration consists of the following steps
+# Controlled by DES
+# 1) The Forward Global Calibration Model (FGCM), see Burke et al.
+# 2) Determining the offsets between the standard and synthetic magnitudes of the CALSPEC stars
+# 3) The photometric methods used to estimate fluxes for SNe, CALPSEC standards and calibration stars.
+# Controlled by STScI
+# 4) The calibration of the secondary stanadrds from the primary HST standards
+# 5) Definition of the absoluted SEDs of the primary HST standards
+
+# Each step has uncertainties.
 
 def compute_C_K(options):
     import JLA_library as JLA
@@ -24,13 +34,17 @@ def compute_C_K(options):
     nDim=36
     C_K_DES=numpy.zeros(nDim*nDim).reshape(nDim,nDim)
      
+    PS1_unc=0.5   # 5 mmag uncertainty in the PanSTARRS calibration
+    FGCM_unc=0.5  # 5 mmag uncertainty, see Burke et al.
+    nCALSPEC_Observations=100
+    AB_unc=0.5 / numpy.sqrt (nCALSPEC_Observations)
 
     if options.base:
-        # Read in the JLA matrix and extract the apprpriate rows and columns
+        # Read in the JLA matrix and extract the appropriate rows and columns
         # The matrix diagonal contains uncertainties in the ZPs first,
         # and uncertainties in the filter curves second
         # The order is specified in salt2_calib_variations_all/saltModels.list
-        # CfA3 and CfA4 rows 10 to 14 We write these to rows 1 
+        # CfA3 and CfA4 rows 10 to 14 We write these to rows 1 to 5
         # CSP  rows 20 to 25
         C_K_JLA=fits.getdata(JLA.get_full_path(params['C_kappa_JLA']))
 
@@ -42,7 +56,6 @@ def compute_C_K(options):
         sel[19:25]=True
         sel2d= numpy.matrix(sel).T * numpy.matrix(sel)
         C_K_DES[0:11,0:11]=C_K_JLA[sel2d].reshape(11,11)
-        # We then add Bc, V1 and V2 - to do
         
         # Filter curves second
         sel=numpy.zeros(size,bool)
@@ -55,54 +68,53 @@ def compute_C_K(options):
     # We first compute them separately, then add them to the matrix
     # Read in the table listing the uncertainties in the ZPs and effective wavelengths
 
-    filterUncertainties=numpy.genfromtxt(JLA.get_full_path(params['filterUncertainties']),comments='#',usecols=(0,1,2,3,5),dtype='S30,f8,f8,f8,f8',names=['filter','zp','wavelength','central','relative_ZP'])
+
+    filterUncertainties=numpy.genfromtxt(JLA.get_full_path(params['filterUncertainties']),comments='#',usecols=(0,1,2,3,5,6),dtype='S30,f8,f8,f8,f8,f8',names=['filter','zp','wavelength','central','relative_ZP','filterFactor'])
 
     nFilters=len(filterUncertainties)
     C_K_new=numpy.zeros(nFilters*nFilters*4).reshape(nFilters*2,nFilters*2)
 
-    # The variance from the uncertainties in the ZP and the central wavelengths
+    #1) and #2) The variance from the uncertainties in the ZP and the central wavelengths
 
     for i,filt in enumerate(filterUncertainties):
-        C_K_new[i,i]=(filt['zp']/1000.)**2.
-        C_K_new[i+nFilters,i+nFilters]=filt['wavelength']**2.
+        C_K_new[i,i]=(filt['zp']/1000.)**2. - (PS1_unc/1000.)**2. + (FGCM_unc/1000.)**2. + (AB_unc/1000.)**2.
+        C_K_new[i+nFilters,i+nFilters]=(filt['filterFactor']*filt['wavelength'])**2.
         
 
-    # B14 3.4.1 The uncertainty in the colour of the WD system 0.5% from 3,000-10,000
+    #4) B14 3.4.1 The uncertainty in the colour of the WD system 0.5% from 3,000-10,000
+    # The uncertainty is computed with respect to the Bessell B filter.
+    # We are not concerned about the absoulte uncertainty as this is degenegate with H_0 and the absolute magnitude of the SNe.
 
     slope=0.005
     waveStart=300.
     waveEnd=1000.
+    B_central=436.0
 
     for i,filt1 in enumerate(filterUncertainties):
         for j,filt2 in enumerate(filterUncertainties):
             if i>=j:
-                C_K_new[i,j]+=(slope / (waveEnd - waveStart) * (filt1['central']-filt2['central']))**2.
-
+#                C_K_new[i,j]+=(slope / (waveEnd - waveStart) * (filt1['central']-filt2['central']))**2.
+                C_K_new[i,j]+=(slope / (waveEnd - waveStart) * (filt1['central']-B_central)) * \
+                              (slope / (waveEnd - waveStart) * (filt2['central']-B_central))
 
     # We need to include the cross terms between DES and the nearby SNe
 
-    # B14 3.4.1 The uncertainty associated to the measurement of the Secondary CALSPEC standards
-    # This only affects the diagonal terms of the ZPs
-                
-    # Uncertainties specific to the calibration of DES
-    # See the steps that are involved in the GRC model
-    # The most important steps are        
-    # i) The global relative calibration, which is applied to single exposures
-    # The SN fields used the individual standard star fields a anchors.
-    # This will be different for Y3A1
+    #3) B14 3.4.1 The uncertainty associated to the measurement of the Secondary CALSPEC standards
+    # The uncerteinty is assumed to be uncorrelated between filters
+    # It only affects the diagonal terms of the ZPs
+    # It is estmated from repeat STIS measurements of the standard AGK+81D266  Bohlin et al. 2000 AJ 120, 437
 
-    for i,filt in enumerate(filterUncertainties):
-        C_K_new[i,i]+=(filt['relative_ZP']/1000.)**2.
 
-    # ii) The SLR adjustment
-    # It is not clear if this is applied to the single exposures. 
-    # We assume that it is not applied to single exposures
+    nObs_C26202=1          # It's been observed at least once
+    unc_transfer=0.003     # See Bohlin et al. 2000 AJ 120, 437 and Bohlin 1999 ISR 99-07
+    for i,filt1 in enumerate(filterUncertainties):
+        C_K_new[i,i]+=unc_transfer**2. / nObs_C26202
 
     C_K_new=C_K_new+C_K_new.T-numpy.diag(C_K_new.diagonal())
     
     # Update C_K. We do not update the terms that come from JLA
-    # For the Bc filter of CfA, and the V1 and V2 filters of CSP, we asumme that they have the same sized systematic uncertainteies
-    # as B filter of CfA and V1 and V2 filters of CSP
+    # For the Bc filter of CfA, and the V1 and V2 filters of CSP, we asumme that they have 
+    # the same sized systematic uncertainteies as B filter of CfA and V1 and V2 filters of CSP
     sel=numpy.zeros(nDim,bool)
     sel[0:11]=True
     sel[18:29]=True

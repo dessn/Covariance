@@ -1,6 +1,8 @@
 """
 Python program to compute C_bias
 """
+# 20161224
+# Modified for DES
 
 from optparse import OptionParser
 
@@ -65,7 +67,7 @@ def compute_bias(options):
     # Determine the uncertainties
 
     bias = numpy.genfromtxt(JLA.get_full_path(params['biasPolynomial']),
-                                  skip_header=3,
+                                  skip_header=4,
                                   usecols=(0, 1, 2, 3),
                                   dtype='S10,f8,f8,f8',
                                   names=['sample', 'redshift', 'bias', 'e_bias'])
@@ -73,12 +75,13 @@ def compute_bias(options):
     if options.plot:
         fig=plt.figure()
         ax=fig.add_subplot(111)
-        colour={'nearby':'b','SNLS':'r','SDSS':'g'}
+        colour={'nearby':'b','SNLS':'r','SDSS':'g','DES':'k'}
 
     for sample in numpy.unique(bias['sample']):
         selection=(bias['sample']==sample)
         guess=[0,0,0]
-        
+
+        print bias[selection]
         plsq=leastsq(residuals, guess, args=(bias[selection]['bias'],
                                              bias[selection]['redshift'],
                                              bias[selection]['e_bias'],
@@ -135,7 +138,7 @@ def compute_bias(options):
                 redshift = SN['zcmb']
             else:
                 redshift = SN['zhel']
-            if JLA.survey(SN) == sample or (JLA.survey(SN)=="DES" and sample=="SNLS"): # Temporary
+            if JLA.survey(SN) == sample:
                 # For the nearby SNe, the uncertainty in the bias correction is the bias correction itself
                 if sample=='nearby':
                     SNe['e_bias'][i]=poly(redshift,plsq[0])
