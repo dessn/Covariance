@@ -57,7 +57,7 @@ def compute_model(options):
     if options.raw:
         # Data from the bottom left hand figure of Mosher et al. 2014.
         # This is option ii) that is descibed above
-        offsets=Table.read(JLA.get_full_path(params['modelOffset']),format='csv')
+        offsets=Table.read(JLA.get_full_path(params['modelOffset']),format='ascii.csv')
         Delta_M=interp1d(offsets['z'], offsets['offset'], kind='linear',bounds_error=False,fill_value='extrapolate')(redshift)
     else:
         Om_0=0.303 # JLA value in the wCDM model

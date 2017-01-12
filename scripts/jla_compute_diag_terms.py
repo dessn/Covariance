@@ -42,7 +42,6 @@ if __name__ == '__main__':
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
     SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
-
     SN_indices = JLA.reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
 

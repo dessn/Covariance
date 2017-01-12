@@ -14,14 +14,14 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     import os
     
     # Set up the path to the SALT model and the name of the outputFile
-    #print SALTpath
     os.environ['SALTPATH']=SALTpath+SALTmodel['directory']+'/snfit_data/'
     outputFile=JLA.get_full_path(options.workArea)+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
     if os.path.isfile(outputFile):
         pass
-#        print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
+        #print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
         # Otherwise, do the fit
+        # Where do we copy this file accross??
         JLA.fitLC(inputFile, outputFile, salt_prefix)
     # Should add results to a log file
     return outputFile
@@ -58,15 +58,15 @@ def compute_Ccal(options):
     for i,SN in enumerate(SNeList):
         SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
-        
     # ----------  Read in the SN light curve fits ------------
     # This is mostly used to get the redshifts of the SNe.
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
-    
+
     # Make sure that the order is correct
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
+
 
     # -----------  Set up the structures to handle the different salt models -------
     SALTpath=JLA.get_full_path(params['saltPath'])
@@ -93,6 +93,8 @@ def compute_Ccal(options):
             SNeList['survey'][i]='SDSS'
         elif SN['id'][2:4] in ['D1','D2','D3','D4']:
             SNeList['survey'][i]='SNLS'
+        elif SN['id'][0:3] in ['DES']:
+            SNeList['survey'][i]='DES'
         elif SN['id'][0:2]=='sn':
             SNeList['survey'][i]='nearby'
         else:
@@ -100,16 +102,17 @@ def compute_Ccal(options):
 
     # -----------   Read in the calibration matrix -----------------
 
+
     Cal=fits.getdata(JLA.get_full_path(params['C_kappa']))
     # Multiply the ZP submatrix by 100^2, and the two ZP-offset matrices by 100,
     # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
-    Cal[0:37,0:37]=Cal[0:37,0:37]*10000.
+    size=Cal.shape[0] / 2
+    Cal[0:size,0:size]=Cal[0:size,0:size]*10000.
     # 
-    Cal[0:37,37:]*=Cal[0:37,37:]*100.
-    Cal[37:,0:37]=Cal[37:,0:37]*100.
+    Cal[0:size,size:]*=Cal[0:size,size:]*100.
+    Cal[size:,0:size]=Cal[size:,0:size]*100.
 
     #print SALTpath
-
 
     # ------------- Create an area to work in -----------------------
 
@@ -170,20 +173,22 @@ def compute_Ccal(options):
         except:
             pass               
 
-
+    nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
+#    sampleList=['nearby','DES']
+    sampleList=params['smoothList'].split(',')
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
         # Note that HST is smoothed as well.
-        nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11} 
-        for sample in ['SNLS','SDSS','nearby']:
+#        for sample in ['SNLS','SDSS','nearby','DES']:
+        for sample in sampleList:
             selection=(SNeList['survey']==sample)
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
                 # We need to convert to a numpy array
                 # There is probably a better way
-                redshifts=numpy.array([z[0] for z in SNeList[selection]['z']])
+                redshifts=numpy.array([z for z in SNeList[selection]['z']])
                 derivatives_mag=J_sample[0::3][:,sys]  # [0::3] = [0,3,6 ...] Every 3rd one
                 #print redshifts.shape, derivatives_mag.shape, nPoints[sample]
                 forPlotting_mag,res_mag=JLA.smooth(redshifts,derivatives_mag,nPoints[sample])
@@ -207,10 +212,14 @@ def compute_Ccal(options):
                     ax3=fig.add_subplot(313)
                     ax1.plot(redshifts,derivatives_mag,'bo')
                     ax1.plot(forPlotting_mag[0],forPlotting_mag[1],'r-')
+                    ax1.set_ylabel('mag')
                     ax2.plot(redshifts,derivatives_x1,'bo')
                     ax2.plot(forPlotting_x1[0],forPlotting_x1[1],'r-')
+                    ax2.set_ylabel('x1')
                     ax3.plot(redshifts,derivatives_c,'bo')
                     ax3.plot(forPlotting_c[0],forPlotting_c[1],'r-')
+                    ax3.set_ylabel('c')
+                    ax3.set_xlabel('z')
         
                     plt.savefig('figures/%s_sys_%d.png' % (sample,sys))
                     plt.close()
