@@ -85,7 +85,7 @@ def create_Models(options):
     SALTmodels=Table.read(options.modelList,format='ascii')
 
     modelList=[]
-    for model in os.listdir(JLA.get_full_path(options.base)): 
+    for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
             print "Copying across %s" % model
             modelList.append(model)

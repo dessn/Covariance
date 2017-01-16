@@ -115,23 +115,22 @@ def compute_Ccal(options):
     #print SALTpath
 
     # ------------- Create an area to work in -----------------------
-
+    workArea = JLA.get_full_path(options.workArea)
     try:
-        os.mkdir(options.workArea)
+        os.mkdir(workArea)
     except:
         pass
 
     # -----------   The lightcurve fitting --------------------------
 
     firstSN=True
-
+    
     log=open('log.txt','w')
 
     for i,SN in enumerate(SNeList):
-
         J=[]
         try:
-            os.mkdir(options.workArea+'/'+SN['id'])
+            os.mkdir(workArea+'/'+SN['id'])
         except:
             pass
 
@@ -174,8 +173,8 @@ def compute_Ccal(options):
             pass               
 
     nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
-#    sampleList=['nearby','DES']
-    sampleList=params['smoothList'].split(',')
+    sampleList=['nearby','DES']
+    #sampleList=params['smoothList'].split(',')
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
