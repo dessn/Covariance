@@ -31,7 +31,7 @@ def compute_C_K(options):
 
     # -----------  If required, read in the JLA version of C_Kappa ------------
 
-    nDim=36
+    nDim=46
     C_K_DES=numpy.zeros(nDim*nDim).reshape(nDim,nDim)
      
     PS1_unc=0.5   # 5 mmag uncertainty in the PanSTARRS calibration
@@ -44,25 +44,25 @@ def compute_C_K(options):
         # The matrix diagonal contains uncertainties in the ZPs first,
         # and uncertainties in the filter curves second
         # The order is specified in salt2_calib_variations_all/saltModels.list
-        # CfA3 and CfA4 rows 10 to 14 We write these to rows 1 to 5
-        # CSP  rows 20 to 25
+        # CfA3 and CfA4 rows 10 to 19. We write these to rows 1 to 10
+        # CSP  rows 20 to 25. We write these to rows 11 to 15
         C_K_JLA=fits.getdata(JLA.get_full_path(params['C_kappa_JLA']))
 
         # Extract the relevant columns and rows
         # ZPs first
         size=C_K_JLA.shape[0]
         sel=numpy.zeros(size,bool)
-        sel[9:14]=True
+        sel[9:19]=True
         sel[19:25]=True
         sel2d= numpy.matrix(sel).T * numpy.matrix(sel)
-        C_K_DES[0:11,0:11]=C_K_JLA[sel2d].reshape(11,11)
+        C_K_DES[0:16,0:16]=C_K_JLA[sel2d].reshape(16,16)
         
         # Filter curves second
         sel=numpy.zeros(size,bool)
-        sel[9+size/2:14+size/2]=True
+        sel[9+size/2:19+size/2]=True
         sel[19+size/2:25+size/2]=True
         sel2d= numpy.matrix(sel).T * numpy.matrix(sel)
-        C_K_DES[18:29,18:29]=C_K_JLA[sel2d].reshape(11,11)
+        C_K_DES[23:39,23:39]=C_K_JLA[sel2d].reshape(16,16)
 
     # Compute the terms in DES, this includes the cross terms as well
     # We first compute them separately, then add them to the matrix
@@ -73,7 +73,6 @@ def compute_C_K(options):
 
     nFilters=len(filterUncertainties)
     C_K_new=numpy.zeros(nFilters*nFilters*4).reshape(nFilters*2,nFilters*2)
-
     #1) and #2) The variance from the uncertainties in the ZP and the central wavelengths
 
     for i,filt in enumerate(filterUncertainties):
@@ -116,8 +115,8 @@ def compute_C_K(options):
     # For the Bc filter of CfA, and the V1 and V2 filters of CSP, we asumme that they have 
     # the same sized systematic uncertainteies as B filter of CfA and V1 and V2 filters of CSP
     sel=numpy.zeros(nDim,bool)
-    sel[0:11]=True
-    sel[18:29]=True
+    sel[0:16]=True
+    sel[23:39]=True
     sel2d= numpy.matrix(sel).T * numpy.matrix(sel)
     C_K_new[sel2d]=0.0
     C_K_DES+=C_K_new

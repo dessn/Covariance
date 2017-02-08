@@ -83,7 +83,6 @@ def create_Models(options):
         print "Directory %s already exists" % (options.output)
 
     SALTmodels=Table.read(options.modelList,format='ascii')
-
     modelList=[]
     for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
