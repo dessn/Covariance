@@ -187,11 +187,24 @@ def SALTmodels(saltModels):
 
     return models
 
-def fitLC(inputFile, outputFile, salt_prefix=''):
+def fitLC(inputFile, outputFile, salt_prefix='',forceDayMax=False):
     """fits the lightcurve with the specified SALT2.4 lightcurve fitter;
     calls snfit (can specify path to executable)
     """
-    cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
+    if forceDayMax:
+        # Get the data of maximum light
+        f=open(inputFile)
+        lines=f.readlines()
+        f.close()
+        for line in lines:
+            entries=line.split()
+            if entries[0]=="@DayMax":
+                DayMax=entries[1]
+                break
+        cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile + " -f DayMax " + DayMax
+        print cmd
+    else:
+        cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
@@ -373,11 +386,10 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     # Todo, skip the fit if it already exists
     inputFile1=os.path.split(inputFile)[1]
     outputFile1=SN+'.fit'
-    
     if os.path.isfile(outputFile1):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile1)
     else:
-        fitLC(inputFile1,outputFile1,salt_prefix)
+        fitLC(inputFile1,outputFile1,salt_prefix,True)
 
     # Adjust the value of E(B-V)
     inputFile2=inputFile1+'2'
@@ -388,7 +400,8 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     if os.path.isfile(outputFile2):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile2)
     else:
-        fitLC(inputFile2,outputFile2,salt_prefix)
+        fitLC(inputFile2,outputFile2,salt_prefix,True)
+
     
     f=open(outputFile1)
     lines=f.readlines()

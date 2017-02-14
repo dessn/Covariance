@@ -7,7 +7,7 @@ import JLA_library as JLA
 import numpy as np
 
 # Usage
-# JLA_computeCcal.py opitons
+# JLA_computeCcal.py optioons
 # 
 
 def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
@@ -22,7 +22,7 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     else:
         # Otherwise, do the fit
         # Where do we copy this file accross??
-        JLA.fitLC(inputFile, outputFile, salt_prefix)
+        JLA.fitLC(inputFile, outputFile, salt_prefix, forceDayMax=True)
     # Should add results to a log file
     return outputFile
 

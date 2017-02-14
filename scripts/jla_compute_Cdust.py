@@ -40,7 +40,7 @@ def compute_dust(options):
 
     for SN in SNelist:
         inputFile = SN['lc']
-        print 'Fitting %s' % (SN['id'])
+        print 'Fitting %s ' % (SN['lc'])
         workArea = JLA.get_full_path(options.workArea)
         dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_prefix)
         j.extend([dm, dx1, dc])
