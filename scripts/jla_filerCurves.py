@@ -1,4 +1,4 @@
-"""Takes the filter curves that Eli provided and saves them in a format that can be used by SALT2
+"""Takes the filter curves that Ting Li provided and saves them in a format that can be used by SALT2
 """
 
 from optparse import OptionParser
@@ -14,13 +14,13 @@ def make_FilterCurves(options):
 
     filterCurve=Table.read(options.input,format='fits')
 
-    f=open(options.input.replace('.fits','.dat'),'w')
+    f=open("des_y3a1_std_%s.dat" % (options.filterName),'w')
     f.write("# Written on %s\n" % (JLA.get_date()))
     f.write("# Derived from %s\n" % (options.input))
     f.write("# Wavelength (Angstroms) Transmission\n")
-    selection=(filterCurve["LAMBDA"] >  bounds[options.filterName]["lower"]) & (filterCurve["LAMBDA"] <  bounds[options.filterName]["upper"])
+    selection=(filterCurve["lambda"] >  bounds[options.filterName]["lower"]) & (filterCurve["lambda"] <  bounds[options.filterName]["upper"])
     for line in filterCurve[selection]:
-        f.write("%5.1f %7.5f\n" % (line["LAMBDA"],line["THROUGHPUT"]))
+        f.write("%5.1f %7.5f\n" % (line["lambda"],line[options.filterName]))
 
     f.close
 

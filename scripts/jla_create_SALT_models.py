@@ -82,7 +82,7 @@ def create_Models(options):
     except:
         print "Directory %s already exists" % (options.output)
 
-    SALTmodels=Table.read(options.modelList,format='ascii')
+    SALTmodels=Table.read(options.modelList,format='ascii',names=['ID','Description'],data_start=0)
     modelList=[]
     for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
@@ -158,6 +158,11 @@ def create_Models(options):
         modelList.append(model['modelNumber'])
 
     print 'We now have %d models' % (len(modelList))
+    
+    # ---- Copy accross the saltModels.list ----
+
+    shutil.copy(options.modelList,options.output+'/saltModels.list')
+    
 
     return
 
