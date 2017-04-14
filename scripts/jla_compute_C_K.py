@@ -56,19 +56,16 @@ def compute_C_K(options):
 
         # Extract the relevant columns and rows
         # ZPs first
+        # Since the indices for CfA4, CfA4, and CSP are consecutive, we do this all at once
         size = C_K_JLA.shape[0]
-        sel = numpy.zeros(size, bool)
-        sel[9:19] = True
-        sel[19:25] = True
-        sel2d = numpy.matrix(sel).T * numpy.matrix(sel)
-        C_K_DES[0:16, 0:16] = C_K_JLA[sel2d].reshape(16, 16)
+        C_K_DES[0:16, 0:16] = C_K_JLA[9:25,9:25]
 
         # Filter curves second
-        sel = numpy.zeros(size, bool)
-        sel[9+size/2:19+size/2] = True
-        sel[19+size/2:25+size/2] = True
-        sel2d = numpy.matrix(sel).T * numpy.matrix(sel)
-        C_K_DES[23:39, 23:39] = C_K_JLA[sel2d].reshape(16, 16)
+        C_K_DES[23:39, 23:39] = C_K_JLA[9+size/2:25+size/2,9+size/2:25+size/2]
+
+        # Cross terms. Not needed, as they are zero
+        # C_K_DES[0:16, 23:39] = C_K_JLA[9:25,9+size/2:25+size/2]
+        # C_K_DES[23:39, 0:16] = C_K_JLA[9+size/2:25+size/2,9:25]
 
     # Read in the table listing the uncertainties in the ZPs and
     # effective wavelengths
@@ -123,6 +120,7 @@ def compute_C_K(options):
     waveEnd = 1000.
     B_central = 436.0
 
+    # Note that 2.5 * log_10 (1+x) ~ x for |x| << 1
     for i, filt1 in enumerate(filterUncertainties):
         for j, filt2 in enumerate(filterUncertainties):
             if i >= j:
