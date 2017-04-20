@@ -4,6 +4,10 @@ the contamimation from Ibc SNe"""
 # 20161121
 # Revised to accept input for the JLA++host sample
 
+# 20170419
+# Revised for DES
+
+
 from optparse import OptionParser
 
 def compute_nonIa(options):
@@ -47,9 +51,21 @@ def compute_nonIa(options):
 
     # We assume that the redshift in this table refers to the left hand edge of each bin
 
-    z_bin = numpy.array([0.0, 0.1, 0.26, 0.41, 0.57, 0.72, 0.89, 1.04])
-    raw_bias = numpy.array([0.0, 0.015, 0.024, 0.024, 0.024, 0.023, 0.026, 0.025])
-    f_star = numpy.array([0.0, 0.00, 0.06, 0.14, 0.17, 0.24, 0.50, 0.00])
+    # -----------  Read in the configuration file ------------
+
+    params = JLA.build_dictionary(options.config)
+    
+
+    # From JLA .
+    if 'JLA' in options.SNlist:
+        z_bin = numpy.array([0.0, 0.1, 0.26, 0.41, 0.57, 0.72, 0.89, 1.04])
+        raw_bias = numpy.array([0.0, 0.015, 0.024, 0.024, 0.024, 0.023, 0.026, 0.025])
+        f_star = numpy.array([0.0, 0.00, 0.06, 0.14, 0.17, 0.24, 0.50, 0.00])
+    else:
+        data=numpy.genfromtxt(JLA.get_full_path(params['classification']),comments="#",usecols=(0,1,2),dtype=['float','float','float'],names=['redshift','raw_bias','fraction'])
+        z_bin=data['redshift']
+        raw_bias=data['raw_bias']
+        fraction=data['fraction']
 
     # The covaraiance between SNe Ia in the same redshift bin is fully correlated
     # Otherwise, it is uncorrelated

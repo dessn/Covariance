@@ -1,9 +1,17 @@
 """Python program that convert light curves 
 """
 
-# Currenly, we take the SNANA lightcurves and modify the SALT2 lightcurves that were provided by Rick
-# This program does much the same thing, but also adds an additional source of noise that seems to correlate
-# with the brightness of the hosts
+# We take the SNANA lightcurves provided by Rick and convert them to the SALT2 format
+# It then adds 
+# i) E(B-V)
+# ii) Adds noise that seems to correlate with the brightness of the hosts
+# iii) Estimates the date of B-band peak
+
+# Usage
+# jla_convert_lightcurves.py -c configFile
+#
+# 
+
 
 from optparse import OptionParser
 import numpy as np
@@ -15,9 +23,6 @@ import os
 
 daysOfMax=20.
 
-# Usage
-# jla_convert_lightcurves.py options
-# 
 
 def valid(s,char):
     if len(s.strip())==0:
@@ -175,9 +180,9 @@ class snanaLightCurve:
         fluxerr=selectedData['FLUXCALERR'][selection]
         guess=(200.0,0.0,-1.0)
         plsq=leastsq(residuals, guess, args=(flux,mjd,fluxerr,'polynomial'), full_output=1)
-        # Is a 2nd order polynomial the best choice
+        # Is a 2nd order polynomial the best choice?
         self.dateofMax=-1.0 * plsq[0][1] / plsq[0][2] / 2 + dateOfMax
-        self.dateofMaxError=5.0 # This needs to be determined more rigously
+        self.dateofMaxError=5.0 # This needs to be determined more rigorously
         if options.plot:
             fig=plt.figure()
             ax=fig.add_subplot(111)
@@ -251,7 +256,7 @@ class snanaLightCurve:
         # Need to determine the field
         # Need to determine the date of max
 
-        analysis_variables={}
+        analysis_variables={'SNTYPE':'SNTYPE'}
 
         if format=='SALT2.4':
             f=open(output,'w')
@@ -270,6 +275,8 @@ class snanaLightCurve:
             f.write('# !\n')
             f.write('# ! Analysis variables\n')
             f.write('# !\n')
+            for variable in analysis_variables.keys():
+                f.write('@%s %s\n' % (variable,self.parameters[analysis_variables[variable]].split()[0]))
             # Data
             f.write('# ! --------------------------------------\n')
             f.write('#Date :\n')
@@ -347,12 +354,15 @@ def get_extinction(fileName,options):
 def convert_lightcurves(options):
 
     # Read in the configuration file
+    # The configuraiton file contains the location of various files
     params=JLA.build_dictionary(options.config)
 
     # Read in the extra variance
+    # This depends on the photometric method. It is lower for SMP 
     extraVariance=get_extra_variance(JLA.get_full_path(params['extraVariance']),options)
 
     # Read in the extinction values
+    # A temporary fix as the lightcurves do not currently have it
     extinction=get_extinction(JLA.get_full_path(params['extinction']),options)
 
 
@@ -366,7 +376,8 @@ def convert_lightcurves(options):
             if lc.parameters['SNTYPE'].split()[0] in ['1','101']:   # It is a SN Ia or SN Ia?
                 lc.clean()                                # Remove bad photometry
                 lc.addNoise(extraVariance)                # Add additional variance to the lightcurve points
-                lc.estimateDateOfMax(options)             # Does setting an approximate date of max to the light curve fitting done below.
+                # It is not clear if we need to compute a rough date of max before doing the more precise fit
+                lc.estimateDateOfMax(options)             # Sets an approximate date of max for the light curve fitting done below.
                 # Apply cuts
                 # lc.applySNCuts()
                 # lc.applySamplingCuts()
