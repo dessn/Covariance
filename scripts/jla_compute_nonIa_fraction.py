@@ -58,7 +58,7 @@ def compute_nonIa_fraction(options):
 
 
     bins=numpy.array([0.00,0.10,0.26,0.41,0.57,0.72,0.89,1.04])
-    bias=numpy.array([0.015,0.024,0.024,0.024,0.023,0.023,0.026,0.025])
+    bias=numpy.array([0.00,0.015,0.024,0.024,0.024,0.023,0.026,0.025])
     selection=(types['SNtype']==1)
     SNeIa=numpy.histogram(types[selection]['redshift'],bins)
     SNeIa_total=numpy.histogram(types['redshift'],bins)
@@ -72,9 +72,10 @@ def compute_nonIa_fraction(options):
     output.write('# DES SN classification\n')
     output.write('# Written on %s\n' % (JLA.get_date()))
     output.write('# redshift\tRaw_bias\tfraction\n')
-    for i,b in enumerate(bins[:-1]):
+    output.write('%4.2f\t%4.3f\t%4.3f\n' % (0.0,0.0,0.0))
+    for i in range(len(bins)-1):
         if SNeIa_total[0][i] > 0:
-            output.write('%4.2f\t%4.3f\t%4.3f\n' % (b,bias[i],1.0-1.0*SNeIa[0][i]/SNeIa_total[0][i]))
+            output.write('%4.2f\t%4.3f\t%4.3f\n' % (bins[i+1],bias[i+1],1.0-1.0*SNeIa[0][i]/SNeIa_total[0][i]))
 
     output.close()
     
