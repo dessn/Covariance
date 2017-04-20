@@ -56,16 +56,10 @@ def compute_nonIa(options):
     params = JLA.build_dictionary(options.config)
     
 
-    # From JLA .
-    if 'JLA' in options.SNlist:
-        z_bin = numpy.array([0.0, 0.1, 0.26, 0.41, 0.57, 0.72, 0.89, 1.04])
-        raw_bias = numpy.array([0.0, 0.015, 0.024, 0.024, 0.024, 0.023, 0.026, 0.025])
-        f_star = numpy.array([0.0, 0.00, 0.06, 0.14, 0.17, 0.24, 0.50, 0.00])
-    else:
-        data=numpy.genfromtxt(JLA.get_full_path(params['classification']),comments="#",usecols=(0,1,2),dtype=['float','float','float'],names=['redshift','raw_bias','fraction'])
-        z_bin=data['redshift']
-        raw_bias=data['raw_bias']
-        fraction=data['fraction']
+    data=numpy.genfromtxt(JLA.get_full_path(params['classification']),comments="#",usecols=(0,1,2),dtype=['float','float','float'],names=['redshift','raw_bias','fraction'])
+    z_bin=data['redshift']
+    raw_bias=data['raw_bias']
+    f_star=data['fraction']
 
     # The covaraiance between SNe Ia in the same redshift bin is fully correlated
     # Otherwise, it is uncorrelated
@@ -85,7 +79,7 @@ def compute_nonIa(options):
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
 
-    # Add a bin column and a column that specified of the covariance is non-zero
+    # Add a bin column and a column that specifies if the covariance needs to be computed
     SNe['bin'] = 0
     SNe['eval'] = False
 
@@ -93,32 +87,33 @@ def compute_nonIa(options):
     
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
-    print len(indices)
 
     nSNe = len(SNe)
     # Identify the SNLS SNe in the JLA sample
     # We use the source and the name to decide if we want to add corrections for non-Ia contamination
-    # If the source keyword does not exist, we skip the correction
+    # Identify the DESS SNe in the DES sample.
     for i, SN in enumerate(SNe):
         try:
+            # If the source keyword exists
             if (SN['source'] == 'JLA' or SN['source'] == 'SNLS_spec') and SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4']:
                 SNe['eval'][i] = True
             elif (SN['source']== 'SNLS_photo') and (SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4'] or (SN['name'][0:2] in ['D1', 'D2', 'D3', 'D4'])):
                 SNe['eval'][i] = True
-                print SN['source'],SN['name']
         except:
-            pass
+            # If the source keyword does not exist
+            if SN['name'][0:3]=="DES":
+                SNe['eval'][i] = True
 
     # Work out which redshift bin each SNe belongs to
     # In numpy.digitize, the bin number starts at 1, so we subtract 1
     SNe['bin'] = numpy.digitize(SNe['zhel'], z_bin)-1
 
     # Build the covariance matrix
-
     C_nonIa = numpy.zeros(nSNe*3*nSNe*3).reshape(nSNe*3, nSNe*3)
 
     # It is only computes the covariance for the spectroscopically confirmed SNLS SNe
     # We assume that covariance between redshift bins is uncorrelated
+    # Within a redshift bin, we assume 100% covariance between SNe in that bin
 
     for i in range(nSNe):
         bin1 = SNe['bin'][i]
@@ -126,6 +121,8 @@ def compute_nonIa(options):
             bin2 = SNe['bin'][j]
             if SNe['eval'][j] and SNe['eval'][i] and bin1 == bin2:
                 C_nonIa[3*i, 3*j] = (raw_bias[bin1] * f_star[bin1])*(raw_bias[bin2] * f_star[bin2])
+
+    # I am unable to reproduce this JLA covariance matrix
 
     date = JLA.get_date()
 
