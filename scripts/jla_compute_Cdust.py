@@ -34,6 +34,7 @@ def compute_dust(options):
 
     # Compute the offset between the nominal value of the extinciton 
     # and the adjusted value
+    # We first compute the difference in light curve fit parameters for E(B-V) * (1+offset)
     offset = 0.1
 
     j = []
@@ -45,6 +46,7 @@ def compute_dust(options):
         dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_prefix)
         j.extend([dm, dx1, dc])
     
+    # But we want to compute the impact of an offset that is twice as large, hence the factor of 4 in the expression
     cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0
 
     date = JLA.get_date()

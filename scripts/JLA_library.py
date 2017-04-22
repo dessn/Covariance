@@ -383,7 +383,8 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
 
 
     # Run snfit twice, once with the correct value of E(B-V) and again with the adjusted value
-    # Todo, skip the fit if it already exists
+    # We force the fit to use the date of Max that is set in the light curve file
+
     inputFile1=os.path.split(inputFile)[1]
     outputFile1=SN+'.fit'
     if os.path.isfile(outputFile1):

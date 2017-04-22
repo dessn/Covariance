@@ -1,4 +1,4 @@
-"""Python program to compute the Jacobian anc C_cal matrices
+"""Python program to compute the C_cal matrices
 """
 
 from optparse import OptionParser
@@ -9,6 +9,8 @@ import numpy as np
 # Usage
 # JLA_computeCcal.py optioons
 # 
+# The method follows the description in section 5.4 of B14
+
 
 def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     import os
@@ -20,10 +22,8 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
         pass
         #print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
-        # Otherwise, do the fit
-        # Where do we copy this file accross??
+        # Otherwise, do the fit with the date of Max set to the value in the lightcurve file
         JLA.fitLC(inputFile, outputFile, salt_prefix, forceDayMax=True)
-    # Should add results to a log file
     return outputFile
 
 
@@ -35,7 +35,6 @@ def compute_Ccal(options):
     import numpy
     import astropy.io.fits as fits
     from astropy.table import Table
-
     import multiprocessing as mp
     import matplotlib.pyplot as plt
 
@@ -59,7 +58,8 @@ def compute_Ccal(options):
         SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '')
 
     # ----------  Read in the SN light curve fits ------------
-    # This is mostly used to get the redshifts of the SNe.
+    # This is used to get the SN redshifts which are used in smoothing the Jacbian
+
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
 
@@ -69,11 +69,12 @@ def compute_Ccal(options):
 
 
     # -----------  Set up the structures to handle the different salt models -------
+    # The first model is the unperturbed salt model
     SALTpath=JLA.get_full_path(params['saltPath'])
 
     SALTmodels=JLA.SALTmodels(SALTpath+'/saltModels.list')
     nSALTmodels=len(SALTmodels)-1
-    #print SALTmodels, nSALTmodels
+    print SALTmodels, nSALTmodels
 
     nSNe=len(SNeList)
     print 'There are %d SNe in the sample' % (nSNe)
@@ -84,10 +85,8 @@ def compute_Ccal(options):
     SNeList['z'] = SNe['zhel']
 
     # Identify the SNLS, SDSS, HST and low-z SNe. We use this when smoothing the Jacobian
-    # There is probably a more elegant and efficient way of doing this
-
-    # We need to allow for Vanina's naming convention when doing this for the photometric sample
-
+    # There is rather inelegant 
+    # We still need to allow for Vanina's naming convention when doing this for the photometric sample
     for i,SN in enumerate(SNeList):
         if SN['id'][0:4]=='SDSS':
             SNeList['survey'][i]='SDSS'
@@ -101,18 +100,15 @@ def compute_Ccal(options):
             SNeList['survey'][i]='high-z'
 
     # -----------   Read in the calibration matrix -----------------
-
-
     Cal=fits.getdata(JLA.get_full_path(params['C_kappa']))
-    # Multiply the ZP submatrix by 100^2, and the two ZP-offset matrices by 100,
+
+    # Multiply the ZP submatrix by 100^2, and the two ZP-offset submatrices by 100,
     # because the magnitude offsets are 0.01 mag and the units of the covariance matrix are mag
     size=Cal.shape[0] / 2
     Cal[0:size,0:size]=Cal[0:size,0:size]*10000.
-    # 
     Cal[0:size,size:]*=Cal[0:size,size:]*100.
     Cal[size:,0:size]=Cal[size:,0:size]*100.
 
-    #print SALTpath
 
     # ------------- Create an area to work in -----------------------
     workArea = JLA.get_full_path(options.workArea)
@@ -134,20 +130,23 @@ def compute_Ccal(options):
         except:
             pass
 
-        firstModel=True
+        #firstModel=True
         print 'Examining SN #%d %s' % (i+1,SN['id'])
 
         # Set up the number of processes
         pool = mp.Pool(processes=int(options.processes))
+        # runSALT is the program that does the lightcurve fitting
         results = [pool.apply(runSALT, args=(SALTpath,
                                              SALTmodel,
                                              salt_prefix,
                                              SN['lc'],
                                              SN['id'])) for SALTmodel in SALTmodels]
         for result in results[1:]:
+            # The first model is the unperturbed model
             dM,dX,dC=JLA.computeOffsets(results[0],result)
             J.extend([dM,dX,dC])
         pool.close() # This prevents to many open files
+
         if firstSN:
             J_new=numpy.array(J).reshape(nSALTmodels,3).T
             firstSN=False
@@ -173,13 +172,12 @@ def compute_Ccal(options):
             pass               
 
     nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
-    sampleList=['nearby','DES']
-    #sampleList=params['smoothList'].split(',')
+    #sampleList=['nearby','DES']
+    sampleList=params['smoothList'].split(',')
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
-        # Note that HST is smoothed as well.
-#        for sample in ['SNLS','SDSS','nearby','DES']:
+        # Note that HST is smoothed as well
         for sample in sampleList:
             selection=(SNeList['survey']==sample)
             J_sample=J[numpy.repeat(selection,3)]
