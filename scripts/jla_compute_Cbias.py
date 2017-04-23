@@ -39,7 +39,6 @@ def compute_bias(options):
 
 
     # -----------  Read in the configuration file ------------
-
     params=JLA.build_dictionary(options.config)
 
     # -----------  Read in the SN ordering ------------------------
@@ -58,11 +57,11 @@ def compute_bias(options):
 
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe=SNe[indices]
-    # Add a column that records the error in the bias
+
+    # Add a column that records the error in the bias correction
     SNe['e_bias'] = numpy.zeros(nSNe,'f8')
 
-
-    # Read in the points from B14 figure 
+    # Read in the bias correction (see, for example, Fig.5 in B14)
     # Fit a polynomial to the data
     # Determine the uncertainties
 
@@ -101,8 +100,7 @@ def compute_bias(options):
             z=numpy.arange(numpy.min(bias[selection]['redshift']),numpy.max(bias[selection]['redshift']),0.001)
             ax.plot(z,poly(z,plsq[0]),color=colour[sample])
 
-        # For each SNe, determine the uncerainty in the correction. We use the covariance martix
-        # prediction bounds for the fitted curve. 
+        # For each SNe, determine the uncerainty in the correction. We use the approach descibed in
         # https://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html
         
         # Compute the chi-sq.
@@ -111,7 +109,7 @@ def compute_bias(options):
         print "Reduced chi-square value for sample %s is %5.2e" % (sample, chisq / dof)
 
         alpha=0.315 # Confidence interval is 100 * (1-alpha)
-        # Compute the upper alpha/2 vallue for the student t distribution with dof
+        # Compute the upper alpha/2 value for the student t distribution with dof
         thresh=t.ppf((1-alpha/2.0), dof)
         
         if options.plot and sample!='nearby':
@@ -124,7 +122,6 @@ def compute_bias(options):
                 upper_curve.append(poly(x,plsq[0])+offset)
                 lower_curve.append(poly(x,plsq[0])-offset)
 
-            # This does not seem to work for nearby SNe
             ax.plot(z,lower_curve,'--',color=colour[sample])
             ax.plot(z,upper_curve,'--',color=colour[sample])
 

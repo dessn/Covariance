@@ -1,9 +1,9 @@
 """
 Python program to compute the contribution that each uncertainty makes to the
-global uncertainty
-Currently, we do this for the JLA sample only
-See section 6.2 of B14 for a description of the technique
+global uncertainty. 
 """
+
+# See section 6.2 of B14 for a description of the technique
 
 from optparse import OptionParser
 
@@ -22,7 +22,6 @@ def add_covar_matrices(covmatrices,diag):
     # Read in the covariance matrices
     matrices = []
     for matrix in covmatrices:
-#        print matrix, fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0).shape
         matrices.append(fits.getdata(JLA.get_full_path(covmatrices[matrix]), 0))
         # Test for NaNs and replace them with zero
         if numpy.isnan(matrices[-1]).any():
@@ -92,8 +91,6 @@ def compute_rel_size(options):
 
     # sort it to match the listing in options.SNlist
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
-    print SNe
-    print indices
     SNe=SNe[indices]
 
     nSNe=len(SNe)

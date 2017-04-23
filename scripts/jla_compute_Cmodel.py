@@ -30,7 +30,6 @@ def compute_model(options):
 
 
     # -----------  Read in the configuration file ------------
-
     params=JLA.build_dictionary(options.config)
 
     # -----------  Read in the SN ordering ------------------------
@@ -51,6 +50,7 @@ def compute_model(options):
     # For the JLA SNe
     redshift = SNe['zcmb']
     replace=(redshift < 0)
+
     # For the non JLA SNe
     redshift[replace]=SNe[replace]['zhel']
 

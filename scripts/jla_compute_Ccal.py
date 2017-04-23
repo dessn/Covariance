@@ -177,7 +177,6 @@ def compute_Ccal(options):
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
-        # Note that HST is smoothed as well
         for sample in sampleList:
             selection=(SNeList['survey']==sample)
             J_sample=J[numpy.repeat(selection,3)]

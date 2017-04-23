@@ -45,6 +45,32 @@ class HostCorrection(object):
 
         return chost
 
+def compute_Chost(options):
+
+    # -----------  Read in the configuration file ------------
+    params = JLA.build_dictionary(options.config)
+    
+    # ----------  Read in the SN light curve fits ------------
+    # We get the host mass from the light curve fits, listed in the column called '3rdvar'.
+    lcfile = JLA.get_full_path(params[options.lcfits])
+    SN_data = Table.read(lcfile, format='fits')
+
+    # ---------- Read in the SNe list -------------------------
+    SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
+    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
+    SN_indices = JLA.reindex_SNe(SN_list, SN_data)
+    SN_data = SN_data[SN_indices]
+
+    host_correction = HostCorrection()
+
+    C_host = host_correction.covmat_host(SN_data)
+
+    date = JLA.get_date()
+
+    fits.writeto('C_host_%s.fits' % date, np.array(C_host), clobber=True)
+
+    return
+
 if __name__ == '__main__':
 
     parser = OptionParser()
@@ -60,20 +86,5 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    params = JLA.build_dictionary(options.config)
-    
-    lcfile = JLA.get_full_path(params[options.lcfits])
-    SN_data = Table.read(lcfile, format='fits')
+    compute_Chost(options)
 
-    SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
-    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
-    SN_indices = JLA.reindex_SNe(SN_list, SN_data)
-    SN_data = SN_data[SN_indices]
-
-    host_correction = HostCorrection()
-
-    C_host = host_correction.covmat_host(SN_data)
-
-    date = JLA.get_date()
-
-    fits.writeto('C_host_%s.fits' % date, np.array(C_host), clobber=True)

@@ -5,6 +5,12 @@ Python program to reorder the SNe that appear in Cstat
 from optparse import OptionParser
 
 def reorderSNe(options):
+    # The ordering of the SNe produced by salt2_stat does not reflect the order they were input
+    # The ordering in the output file is written to the file sne_mu.list
+    # SDSS SNe in the JLA sample get called @SN 12856.0, which means that the output of salt2_stat has these names.
+    # Some nearby SNe have sn in front of their names. Others do not 
+    # In one case a lower case v is used
+    # DES SNe in the DES sample are listed as 01248677 
 
     import numpy
     import astropy.io.fits as fits
@@ -18,28 +24,24 @@ def reorderSNe(options):
                                names=['id', 'lc']))
 
 
-    # -----------  Read in the ordering of the matrix produced by Cstat ------------
-
+    # -----------  Read in the file that species the ordering of the matrix produced by Cstat ------------
     statList = Table(numpy.genfromtxt(options.input,
                                       usecols=(0,1),
                                       dtype='S30,float',
                                       names=['id','z'],skip_header=13))
 
 
+    # We use the -9 as a way to catch errors.
     reindex=numpy.zeros(len(statList),int)-9
 
-    # SDSS SNe in the JLA sample get called @SN 12856.0, which means that the output of salt2_stat has these names.
-    # Some nearby SNe have sn in front of their names. others do not 
-    # In one case a lower case v is used
-    # DES SNe in the DES sample are listed as 01248677 
     for i,SNname in enumerate(SNeList['id']):
         name=SNname.replace("lc-","").replace(".list","")
         for j,SNname2 in enumerate(statList['id']):
-            if SNname2 == name or ("SDSS"+SNname2.replace(".0","") == name and "SDSS" in name) or (SNname2.replace("sn","")==name.replace("sn","")) or ("DES" in name and "DES_"+SNname2==name):
+            if SNname2 == name or ("SDSS"+SNname2.replace(".0","") == name and "SDSS" in name) or (SNname2.replace("sn","")==name.replace("sn","")) or ("DES" in name and "DES_0"+SNname2==name):
                 if reindex[i]!=-9:
                     print SNname,SNname2
                 reindex[i]=j
-                ##print SNname,SNname2,i,j
+                #print SNname,SNname2,i,j
                 
     for index,value in enumerate(reindex):
         if value==-9:
@@ -47,9 +49,8 @@ def reorderSNe(options):
             print index,SNeList[index]['id']
             exit()
 
-    ##print "The numbers should be the same"
-    ##print len(SNeList), len(statList), len(numpy.unique(reindex))
-
+    print "The numbers should be the same"
+    print len(SNeList), len(statList), len(numpy.unique(reindex))
 
     # -----------  Read in Cstat and re-order --------------------------------------
 
