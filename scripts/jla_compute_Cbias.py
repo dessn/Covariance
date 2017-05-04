@@ -178,14 +178,13 @@ if __name__ == '__main__':
 
     parser.add_option("-s", "--SNlist", dest="SNlist", 
                       help="List of SN")
-
     
     parser.add_option("-l", "--lcfits", dest="lcfits", default="lightCurveFits",
                       help="Key in config file pointing to lightcurve fit parameters")
     
     parser.add_option("-p", "--plot", dest="plot",default=False,
                       action='store_true',
-                      help="List of SN")
+                      help="Plot bias")
 
 
     (options, args) = parser.parse_args()

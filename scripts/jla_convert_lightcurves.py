@@ -197,7 +197,7 @@ class snanaLightCurve:
 
     def fitDateOfMax(self,lightCurveFile,params):
         # A full salt2 fit
-        outputFile=lightCurveFile.replace('.list','.res')
+        outputFile=lightCurveFile#.replace('.list','.res')
         os.environ['SALTPATH']=JLA.get_full_path(params['defsaltModel'])
         JLA.fitLC(lightCurveFile, outputFile, salt_prefix='')
         self.dateofMax,self.dateofMaxError=JLA.getDateOfMax(outputFile)
@@ -373,6 +373,7 @@ def convert_lightcurves(options):
             # Read in the snana file
             lc=snanaLightCurve(snanaDir+lightcurve)
             lightCurveFile=saltDir+lightcurve.replace('des_real','lc-DES').replace('.dat','.list')
+            print lightcurve, lightCurveFile
             if lc.parameters['SNTYPE'].split()[0] in ['1','101']:   # It is a SN Ia or SN Ia?
                 lc.clean()                                # Remove bad photometry
                 lc.addNoise(extraVariance)                # Add additional variance to the lightcurve points

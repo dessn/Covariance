@@ -7,6 +7,9 @@ the contamimation from Ibc SNe"""
 # 20170419
 # Revised for DES
 
+# 20170504
+# remove -1 in digitized (bug) BZ
+
 
 from optparse import OptionParser
 
@@ -60,7 +63,7 @@ def compute_nonIa(options):
     z_bin=data['redshift']
     raw_bias=data['raw_bias']
     f_star=data['fraction']
-
+    
     # The covaraiance between SNe Ia in the same redshift bin is fully correlated
     # Otherwise, it is uncorrelated
 
@@ -104,9 +107,10 @@ def compute_nonIa(options):
             if SN['name'][0:3]=="DES":
                 SNe['eval'][i] = True
 
+    print list(SNe['eval']).count(True)
     # Work out which redshift bin each SNe belongs to
     # In numpy.digitize, the bin number starts at 1, so we subtract 1
-    SNe['bin'] = numpy.digitize(SNe['zhel'], z_bin)-1
+    SNe['bin'] = numpy.digitize(SNe['zhel'], z_bin) 
 
     # Build the covariance matrix
     C_nonIa = numpy.zeros(nSNe*3*nSNe*3).reshape(nSNe*3, nSNe*3)
@@ -117,11 +121,14 @@ def compute_nonIa(options):
 
     for i in range(nSNe):
         bin1 = SNe['bin'][i]
+        if SNe['eval'][i]:
+            print SNe['zhel'][i], bin1, raw_bias[bin1], f_star[bin1], i
         for j in range(nSNe):
             bin2 = SNe['bin'][j]
             if SNe['eval'][j] and SNe['eval'][i] and bin1 == bin2:
-                C_nonIa[3*i, 3*j] = (raw_bias[bin1] * f_star[bin1])*(raw_bias[bin2] * f_star[bin2])
+                C_nonIa[3*i, 3*j] = (raw_bias[bin1] * f_star[bin1])**2
 
+    # print SNe['bin'][:239]
     # I am unable to reproduce this JLA covariance matrix
 
     date = JLA.get_date()

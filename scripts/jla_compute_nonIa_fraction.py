@@ -24,6 +24,7 @@ def compute_nonIa_fraction(options):
     import astropy.io.fits as fits
     from astropy.table import Table
     import JLA_library as JLA
+    import matplotlib.pyplot as plt
 
     # -----------  Read in the configuration file ------------
 
@@ -47,11 +48,11 @@ def compute_nonIa_fraction(options):
             z,t=getVariable(SN['lc'],['Z_HELIO','SNTYPE'])
             redshift.append(float(z))
             SNtype.append(int(t))
-
-    nSNe=len(redshift)
+            nSNe=len(redshift)
     types=numpy.zeros(nSNe,dtype=[('redshift','f4'),('SNtype','i4')])
     types['redshift']=redshift
     types['SNtype']=SNtype
+
 
     print "There are %d SNe" % (nSNe)
 
@@ -62,6 +63,14 @@ def compute_nonIa_fraction(options):
     selection=(types['SNtype']==1)
     SNeIa=numpy.histogram(types[selection]['redshift'],bins)
     SNeIa_total=numpy.histogram(types['redshift'],bins)
+    print SNeIa, SNeIa_total
+
+    if options.plot:
+        fig=plt.figure()
+        ax=fig.add_subplot(111)
+        ax.hist(types[selection]['redshift'],bins=bins, histtype='step', color='b')
+        ax.hist(types['redshift'],bins=bins, histtype='step', color='g')
+        plt.show()
 
     if nSNe > SNeIa_total[0].sum():
         print 'Oops'
@@ -91,6 +100,10 @@ if __name__ == '__main__':
 
     parser.add_option("-s", "--SNlist", dest="SNlist",
                       help="List of SN")
+
+    
+    parser.add_option("-p", "--plot", dest="plot",default=False, action='store_true',
+                      help="plot histograms")
 
 
     (options, args) = parser.parse_args()
