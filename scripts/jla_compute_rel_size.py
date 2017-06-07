@@ -31,7 +31,7 @@ def add_covar_matrices(covmatrices,diag):
 
     # Add the matrices
     size = matrices[0].shape
-    add = numpy.zeros(size[0]**2.).reshape(size[0], size[0])
+    add = numpy.zeros_like(matrices[0])
     for matrix in matrices:
         add += matrix
 
