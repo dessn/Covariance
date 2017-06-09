@@ -205,6 +205,7 @@ def fitLC(inputFile, outputFile, salt_prefix='',forceDayMax=False):
         print cmd
     else:
         cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
+        print cmd
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
@@ -295,22 +296,16 @@ def getDateOfMax(inputFile):
 
 
 
-def insertDateOfMax(SN, inputFile, outputFile, force=False):
+def insertDateOfMax(SN, inputFile, outputFile, workArea, force=False):
     # If the date of Max is already included skip
-
-    try:
-        os.mkdir('workArea')
-    except:
-        pass
-    cwd=os.getcwd()
-    workArea='workArea/'+SN
-
+    """cwd=os.getcwd()
+    workArea=workArea + '/' + SN
     try:
         os.mkdir(workArea)
     except:
         pass
+    print workArea"""
     os.chdir(workArea)
-
     f=open(inputFile)
     lines=f.readlines()
     f.close()
@@ -358,12 +353,8 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
 
     return None
 
-def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
+def computeExtinctionOffset(SN, inputFile, offset, workArea, salt_prefix=''):
     # Write the result and the covariance matrix to the area you want to work in
-    try:
-        os.mkdir(workArea)
-    except:
-        pass
     cwd=os.getcwd()
     workArea=workArea + '/' + SN
     try:
@@ -384,13 +375,14 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
 
     # Run snfit twice, once with the correct value of E(B-V) and again with the adjusted value
     # We force the fit to use the date of Max that is set in the light curve file
+    # remove force: there is no need for this, and will need to be streamlined
 
     inputFile1=os.path.split(inputFile)[1]
     outputFile1=SN+'.fit'
     if os.path.isfile(outputFile1):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile1)
     else:
-        fitLC(inputFile1,outputFile1,salt_prefix,True)
+        fitLC(inputFile1,outputFile1,salt_prefix)
 
     # Adjust the value of E(B-V)
     inputFile2=inputFile1+'2'
@@ -401,7 +393,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     if os.path.isfile(outputFile2):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile2)
     else:
-        fitLC(inputFile2,outputFile2,salt_prefix,True)
+        fitLC(inputFile2,outputFile2,salt_prefix)
 
     
     f=open(outputFile1)

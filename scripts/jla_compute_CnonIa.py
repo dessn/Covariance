@@ -77,7 +77,7 @@ def compute_nonIa(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('_smp.list', '')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
@@ -106,6 +106,7 @@ def compute_nonIa(options):
             # If the source keyword does not exist
             if SN['name'][0:3]=="DES":
                 SNe['eval'][i] = True
+                #print SN['name']
 
     print list(SNe['eval']).count(True)
     # Work out which redshift bin each SNe belongs to
@@ -121,8 +122,8 @@ def compute_nonIa(options):
 
     for i in range(nSNe):
         bin1 = SNe['bin'][i]
-        if SNe['eval'][i]:
-            print SNe['zhel'][i], bin1, raw_bias[bin1], f_star[bin1], i
+        #if SNe['eval'][i]:
+        #    print SNe['zhel'][i], bin1, raw_bias[bin1], f_star[bin1], i
         for j in range(nSNe):
             bin2 = SNe['bin'][j]
             if SNe['eval'][j] and SNe['eval'][i] and bin1 == bin2:

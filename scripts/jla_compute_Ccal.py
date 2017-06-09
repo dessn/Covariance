@@ -20,10 +20,11 @@ def runSALT(SALTpath, SALTmodel, salt_prefix, inputFile, SN):
     outputFile=JLA.get_full_path(options.workArea)+'/'+SN+'/'+SN+'_'+SALTmodel['directory']+'.dat'
     if os.path.isfile(outputFile):
         pass
-        #print "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
+        #print outputFile, "Skipping, fit with SALT model %s for %s already done" % (SALTmodel['directory'],os.path.split(inputFile)[1])
     else:
         # Otherwise, do the fit with the date of Max set to the value in the lightcurve file
-        JLA.fitLC(inputFile, outputFile, salt_prefix, forceDayMax=True)
+        JLA.fitLC(inputFile, outputFile, salt_prefix) #, forceDayMax=True)
+        #print inputFile, outputFile
     return outputFile
 
 
@@ -55,7 +56,7 @@ def compute_Ccal(options):
 
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('_smp.list', '')
 
     # ----------  Read in the SN light curve fits ------------
     # This is used to get the SN redshifts which are used in smoothing the Jacbian

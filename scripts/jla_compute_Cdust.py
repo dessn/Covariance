@@ -20,7 +20,7 @@ def compute_dust(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNelist):
-        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('.list','')
+        SNelist['id'][i] = SNelist['id'][i].replace('lc-','').replace('_smp.list','')
 
     # -----------  Read in the configuration file ------------
 
@@ -43,7 +43,8 @@ def compute_dust(options):
         inputFile = SN['lc']
         print 'Fitting %s ' % (SN['lc'])
         workArea = JLA.get_full_path(options.workArea)
-        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_prefix)
+#        print workArea
+        dm, dx1, dc = JLA.computeExtinctionOffset(SN['id'], inputFile, offset, workArea, salt_prefix)
         j.extend([dm, dx1, dc])
     
     # But we want to compute the impact of an offset that is twice as large, hence the factor of 4 in the expression
