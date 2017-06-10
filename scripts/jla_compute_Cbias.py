@@ -49,15 +49,15 @@ def compute_bias(options):
     nSNe = len(SNeList)
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('_smp.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('_smp','').replace('.list', '')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
     print 'There are %d SNe' % (nSNe)
-
+    print SNeList['id'], SNe
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe=SNe[indices]
-
+    print SNe
     # Add a column that records the error in the bias correction
     SNe['e_bias'] = numpy.zeros(nSNe,'f8')
 

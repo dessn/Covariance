@@ -56,7 +56,7 @@ def compute_Ccal(options):
 
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('_smp.list', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('_smp', '').replace('.list', '')
 
     # ----------  Read in the SN light curve fits ------------
     # This is used to get the SN redshifts which are used in smoothing the Jacbian
@@ -173,13 +173,14 @@ def compute_Ccal(options):
             pass               
 
     nPoints={'SNLS':11,'SDSS':11,'nearby':11,'high-z':11,'DES':11} 
-    #sampleList=['nearby','DES']
     sampleList=params['smoothList'].split(',')
+    print sampleList
     if options.smoothed:
         # We smooth the Jacobian 
         # We roughly follow the method descibed in the footnote of p13 of B14
         for sample in sampleList:
             selection=(SNeList['survey']==sample)
+            print sample#, selection
             J_sample=J[numpy.repeat(selection,3)]
 
             for sys in range(nSALTmodels):
@@ -187,7 +188,7 @@ def compute_Ccal(options):
                 # There is probably a better way
                 redshifts=numpy.array([z for z in SNeList[selection]['z']])
                 derivatives_mag=J_sample[0::3][:,sys]  # [0::3] = [0,3,6 ...] Every 3rd one
-                #print redshifts.shape, derivatives_mag.shape, nPoints[sample]
+                print redshifts.shape, derivatives_mag.shape, nPoints[sample]
                 forPlotting_mag,res_mag=JLA.smooth(redshifts,derivatives_mag,nPoints[sample])
                 derivatives_x1=J_sample[1::3][:,sys]
                 forPlotting_x1,res_x1=JLA.smooth(redshifts,derivatives_x1,nPoints[sample])
@@ -235,7 +236,9 @@ def compute_Ccal(options):
         J_smoothed=fits.getdata(options.jacobian)
 #    else:
 #        # Replace the NaNs in your smoothed Jacobian with zero
-#        J_smoothed[numpy.isnan(J_smoothed)]=0
+        J_smoothed[numpy.isnan(J_smoothed)]=0
+
+    print J_smoothed.shape, Cal.shape
 
     C=numpy.matrix(J_smoothed)*numpy.matrix(Cal)*numpy.matrix(J_smoothed).T
     if options.output==None:

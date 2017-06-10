@@ -77,7 +77,7 @@ def compute_nonIa(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('_smp.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('_smp', '').replace('.list', '')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
@@ -90,7 +90,7 @@ def compute_nonIa(options):
     
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
-
+    print SNeList, SNe
     nSNe = len(SNe)
     # Identify the SNLS SNe in the JLA sample
     # We use the source and the name to decide if we want to add corrections for non-Ia contamination
@@ -102,11 +102,14 @@ def compute_nonIa(options):
                 SNe['eval'][i] = True
             elif (SN['source']== 'SNLS_photo') and (SN['name'][2:4] in ['D1', 'D2', 'D3', 'D4'] or (SN['name'][0:2] in ['D1', 'D2', 'D3', 'D4'])):
                 SNe['eval'][i] = True
-        except:
+            print '1'
+        except KeyError:
             # If the source keyword does not exist
             if SN['name'][0:3]=="DES":
                 SNe['eval'][i] = True
-                #print SN['name']
+                print SN['name']
+#            else:
+#                print SN['name']
 
     print list(SNe['eval']).count(True)
     # Work out which redshift bin each SNe belongs to

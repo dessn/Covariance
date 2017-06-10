@@ -39,8 +39,7 @@ def compute_nonIa_fraction(options):
 
     for i, SN in enumerate(SNeList):
         SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
-
-
+        
     redshift=[]
     SNtype=[]
     for SN in SNeList:

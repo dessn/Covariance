@@ -82,7 +82,7 @@ def compute_rel_size(options):
     SNeList=numpy.genfromtxt(options.SNlist,usecols=(0,2),dtype='S30,S200',names=['id','lc'])
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('_smp','').replace('.list','')
 
     # -----------  Read in the data JLA --------------------------
 
@@ -106,7 +106,6 @@ def compute_rel_size(options):
     nFit=4
 
     cosmo1 = FlatwCDM(name='SNLS3+WMAP7', H0=70.0, Om0=JLA_result['Om'], w0=JLA_result['w'])
-
     redshift = SNe['zcmb']
     replace=(redshift < 0)
     # For the non JLA SNe
@@ -176,7 +175,6 @@ def compute_rel_size(options):
 
     # ---------- Compute W  ----------------------
     # W has shape m * 3n, where m is the number of fit paramaters.
-
     W=(J.T * Cinv * J).I * J.T* Cinv* numpy.matrix(A)
 
     # Note that (J.T * Cinv * J) is a m x m matrix, where m is the number of fit parameters
