@@ -109,13 +109,13 @@ def compute_nonIa(options):
 
     print list(SNe['eval']).count(True)
     # Work out which redshift bin each SNe belongs to
-    # In numpy.digitize, the bin number starts at 1, so we subtract 1
-    SNe['bin'] = numpy.digitize(SNe['zhel'], z_bin) 
+    # In numpy.digitize, the bin number starts at 1, so we subtract 1 -- need to check...
+    SNe['bin'] = numpy.digitize(SNe['zhel'], z_bin)-1 
 
     # Build the covariance matrix
     C_nonIa = numpy.zeros(nSNe*3*nSNe*3).reshape(nSNe*3, nSNe*3)
 
-    # It is only computes the covariance for the spectroscopically confirmed SNLS SNe
+    # It only computes the covariance for the spectroscopically confirmed SNLS SNe
     # We assume that covariance between redshift bins is uncorrelated
     # Within a redshift bin, we assume 100% covariance between SNe in that bin
 

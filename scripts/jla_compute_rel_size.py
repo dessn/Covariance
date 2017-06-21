@@ -155,6 +155,9 @@ def compute_rel_size(options):
         date=JLA.get_date()
         fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
 
+    if options.save:
+        print "Saving the matrices as a tar file"
+
     Cinv=numpy.matrix(C).I
 
     
@@ -225,6 +228,10 @@ if __name__ == '__main__':
     parser.add_option("-a", "--all", dest="all", default=False,
                       action='store_true',
                       help="Provide the summed matrix")
+
+    parser.add_option("-S", "--save", dest="save", default=False,
+                      action='store_true',
+                      help="Save the marices in a tar file")
 
     parser.add_option("-t", "--type", dest="type", default=None,
                       help="Type of systematic to change")
