@@ -37,7 +37,8 @@ def reorderSNe(options):
     for i,SNname in enumerate(SNeList['id']):
         name=SNname.replace("lc-","").replace(".list","")
         for j,SNname2 in enumerate(statList['id']):
-            if SNname2 == name or ("SDSS"+SNname2.replace(".0","") == name and "SDSS" in name) or (SNname2.replace("sn","")==name.replace("sn","")) or ("DES" in name and "DES_0"+SNname2==name):
+            if SNname2 == name or ("SDSS"+SNname2.replace(".0","") == name and "SDSS" in name) or \
+                    (SNname2.replace("sn","")==name.replace("sn","")) or ("DES" in name and "DES_0"+SNname2==name):
                 if reindex[i]!=-9:
                     print SNname,SNname2
                 reindex[i]=j

@@ -39,7 +39,7 @@ def compute_date_of_max(options):
             outputFile=adjlightCurves+SNfile
         else:
             inputFile=SN['lc']
-            outputFile=SN['lc'].replace('forced','forced_adj')
+            outputFile=SN['lc'].replace(lightCurves,adjlightCurves)
 
         print 'Examining %s' % SN['name']
         print outputFile

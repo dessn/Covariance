@@ -67,7 +67,6 @@ def compute_Ccal(options):
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
 
-
     # -----------  Set up the structures to handle the different salt models -------
     # The first model is the unperturbed salt model
     SALTpath=JLA.get_full_path(params['saltPath'])

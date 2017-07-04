@@ -33,8 +33,7 @@ def modify(dst):
     return
 
 
-surveys={'DES':{'input':'DES_3yr_spec/forcePhoto/','output':'DES'},
-         'CSP':{'input':'nearby/CSP/PS1s','output':'CSP'},
+surveys={'CSP':{'input':'nearby/CSP/PS1s','output':'CSP'},
          'CfA3':{'input':'nearby/CfA3/PS1s','output':'CfA3'},
          'CfA4':{'input':'nearby/CfA4/PS1s','output':'CfA4'},
          'CSP+CfA':{'input':'nearby/CfA-CSP_overlap/concat','output':'CfA-CSP_overlap'}}
@@ -46,6 +45,10 @@ SN_list=['sn2009hp']
 file=open(options.output,'w')
 
 for survey in surveys.keys():
+    try:
+        os.mkdir(JLA.get_full_path(params['lightCurves']))
+    except:
+        pass
     try:
         os.mkdir(JLA.get_full_path(params['lightCurves'])+surveys[survey]['output'])
     except:

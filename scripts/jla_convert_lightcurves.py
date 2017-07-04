@@ -52,7 +52,7 @@ def poly(x,p):
 parameter_names=['SURVEY',
                  'SNID',
                  'IAUC',
-                 'SNTYPE',
+                 'TYPE',
                  'FILTERS',
                  'PIXSIZE',
                  'NXPIX',
@@ -118,23 +118,24 @@ class snanaLightCurve:
 
         # Create a structured array based on self.parameters['VARLIST']
         variables=self.parameters['VARLIST'].split()
+        # This is not very robust
         self.data=np.zeros(int(self.parameters['NOBS']),dtype=[(variables[0],float),
                                                                (variables[1],'a1'),
                                                                (variables[2],'a2'),
                                                                (variables[3],float),
                                                                (variables[4],float),
-                                                               (variables[5],int),
+                                                               (variables[5],float),
                                                                (variables[6],float),
                                                                (variables[7],float),
-                                                               (variables[8],float),
-                                                               (variables[9],float),
-                                                               (variables[10],float),
-                                                               (variables[11],float),
-                                                               (variables[12],float),
-                                                               (variables[13],float),
-                                                               (variables[14],int),])
+                                                               (variables[8],int),
+                                                               (variables[9],float),])
+                                                               #(variables[10],float),
+                                                               #(variables[11],float),
+                                                               #(variables[12],float),
+                                                               #(variables[13],float),
+                                                               #(variables[14],int),])
 
-        print 'Examining %s of type %s' % (self.parameters['SNID'],self.parameters['SNTYPE'])
+        print 'Examining %s of type %s' % (self.parameters['SNID'],self.parameters['TYPE'])
         i=0
         for line in lines:
             entries=line.split(':')
@@ -164,7 +165,7 @@ class snanaLightCurve:
         redshift=float(self.parameters['REDSHIFT_FINAL'].split()[0])
         observerFrame=450 * (1+redshift)
         selectedFilter=filters[np.argmin(np.abs(filters['wavelength'] - observerFrame))]['filtName']
-        selectedData=self.data[(self.data['FLT']==selectedFilter)]
+        selectedData=self.data[(self.data['BAND']==selectedFilter)]
         index=np.argmax(selectedData['FLUXCAL'])
         dateOfMax=selectedData[index]['MJD']
         
@@ -197,7 +198,7 @@ class snanaLightCurve:
 
     def fitDateOfMax(self,lightCurveFile,params):
         # A full salt2 fit
-        outputFile=lightCurveFile#.replace('.list','.res')
+        outputFile=lightCurveFile.replace('.list','.res')
         os.environ['SALTPATH']=JLA.get_full_path(params['defsaltModel'])
         JLA.fitLC(lightCurveFile, outputFile, salt_prefix='')
         self.dateofMax,self.dateofMaxError=JLA.getDateOfMax(outputFile)
@@ -222,9 +223,9 @@ class snanaLightCurve:
         for index,data in enumerate(self.data):
             # Find the scaleFactor, this depends on field and filter
             for eV in extraVariance.keys():
-                ##print eV,data['FLT'],data['FIELD']
-                if extraVariance[eV]['filter']==data['FLT'] and data['FIELD'] in extraVariance[eV]['fields']:
-                    filterIndex=filters[data['FLT']]
+                ##print eV,data['BAND'],data['FIELD']
+                if extraVariance[eV]['filter']==data['BAND'] and data['FIELD'] in extraVariance[eV]['fields']:
+                    filterIndex=filters[data['BAND']]
                     # Determine the surfaceBrightess
                     sb=float(self.parameters['HOSTGAL_SB_FLUXCAL'].split()[filterIndex])
                     if sb > 0:
@@ -256,7 +257,7 @@ class snanaLightCurve:
         # Need to determine the field
         # Need to determine the date of max
 
-        analysis_variables={'SNTYPE':'SNTYPE'}
+        analysis_variables={'TYPE':'TYPE'}
 
         if format=='SALT2.4':
             f=open(output,'w')
@@ -288,7 +289,7 @@ class snanaLightCurve:
             f.write('#end :\n')
             # Need to compute a ZP
             for obs in self.data[self.keep]:
-                f.write('%-9s %10.4f %10.4f 27.500 DECAM::%1s DES-AB\n' % (obs['MJD'],obs['FLUXCAL'],obs['FLUXCALERR'],obs['FLT']))
+                f.write('%-9s %10.4f %10.4f 27.500 DECAM::%1s DES-AB\n' % (obs['MJD'],obs['FLUXCAL'],obs['FLUXCALERR'],obs['BAND']))
             
             f.close()
 
@@ -348,7 +349,7 @@ def get_extra_variance(inputFile,options):
 
 def get_extinction(fileName,options):
 
-    return np.genfromtxt(fileName,dtype=[('filename','S20'),('extinction',float)])
+    return np.genfromtxt(fileName,dtype=[('filename','S30'),('extinction',float)])
 
 
 def convert_lightcurves(options):
@@ -363,18 +364,31 @@ def convert_lightcurves(options):
 
     # Read in the extinction values
     # A temporary fix as the lightcurves do not currently have it
+    # Still needed
     extinction=get_extinction(JLA.get_full_path(params['extinction']),options)
 
-
     snanaDir=JLA.get_full_path(params['snanaLightCurves'])
-    saltDir=JLA.get_full_path(params['adjLightCurves'])+'DES/'
+    saltDir=JLA.get_full_path(params['adjLightCurves'])
+
+    try:
+        os.mkdir(saltDir)
+    except:
+        pass
+        
+    saltDir=saltDir+'DES/'
+
+    try:
+        os.mkdir(saltDir)
+    except:
+        pass
+
     for lightcurve in os.listdir(snanaDir):
         if '.dat' in lightcurve:
             # Read in the snana file
             lc=snanaLightCurve(snanaDir+lightcurve)
             lightCurveFile=saltDir+lightcurve.replace('des_real','lc-DES').replace('.dat','.list')
-            print lightcurve, lightCurveFile
-            if lc.parameters['SNTYPE'].split()[0] in ['1','101']:   # It is a SN Ia or SN Ia?
+            if lc.parameters['TYPE'].split()[0] in ['1','101']:   # Is a SN Ia or a SN Ia?
+                print lightcurve, lightCurveFile
                 lc.clean()                                # Remove bad photometry
                 lc.addNoise(extraVariance)                # Add additional variance to the lightcurve points
                 # It is not clear if we need to compute a rough date of max before doing the more precise fit

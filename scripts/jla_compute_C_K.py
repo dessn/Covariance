@@ -10,21 +10,18 @@ from optparse import OptionParser
 #
 # Written specifically for the JLA-like analysis of the DES spectroscopically
 # confirmed sample
-# For Y3A1, the calibration consists of the following steps
-# Those controlled by DES
-# 1) The Forward Global Calibration Model (FGCM), see Burke et al.
-# 2) The offsets between the FGCM and the AB system.
-# 3) The methods used to estimate fluxes for SNe, CALPSEC standards
-# and calibration stars. This is set to zero as the methods are the same.
-# Those controlled by STScI
-# 4) The calibration of the secondary standards from the primary HST standards
-# 5) Definition of the absoluted SEDs of the primary HST standards
-
-# Each step has uncertainties.
-
+# For Y3A1, the calibration consists of a number of systematic uncertainties
+# 1) Those controlled by DES
+# 1a) The differential chromatic correction between tertiary standards and the SNe
+# 1b) The AB offset
+# 1c) The large scale uniformity of the survey
+# 2) Those controlled by STScI
+# 2a) The calibration of the secondary standards from the primary HST standards
+# 2b) Definition of the absoluted SEDs of the primary HST standards
 
 def compute_C_K(options):
     import JLA_library as JLA
+    import jla_FGCM as FGCM
     import numpy
     import astropy.io.fits as fits
 
@@ -37,10 +34,10 @@ def compute_C_K(options):
     nDim = 46  # The number of elements in the DES C_Kappa matrix
     C_K_DES = numpy.zeros(nDim * nDim).reshape(nDim, nDim)
 
-    PS1_unc = 0.005   # 5 mmag uncertainty in the PanSTARRS calibration
-    FGCM_unc =0.005  # 5 mmag uncertainty, see Burke et al.
-    nC26202_Observations = 100  # Needs revision
-    AB_unc = FGCM_unc / numpy.sqrt(nC26202_Observations)
+    FGCM_GAIA = 0.0066            # 6.6 mmag RMS scatter between FGCM and GAIA
+    nC26202_Observations = 20     # Number of times C26202 has been observed
+    FGCM_unc = 0.005              # The RMS scatter in FGCM standard magnitudes
+    chromatic_differential = 0.0  # Set to zero for now
 
     if options.base:
         # Read in the JLA matrix and extract the appropriate rows and columns
@@ -78,7 +75,8 @@ def compute_C_K(options):
     # we asumme that they have the same sized systematic uncertainteies as
     # B filter of CfA and V1 and V2 filters of CSP
     # We could either copy these terms across or recompute them.
-    # We choose to recompute them
+    # We choose to recompute them 
+
 
     # Compute the terms in DES, this includes the cross terms
     # We first compute them separately, then add them to the matrix
@@ -86,27 +84,40 @@ def compute_C_K(options):
     nFilters = len(filterUncertainties)
     C_K_new = numpy.zeros(nFilters*nFilters*4).reshape(nFilters*2, nFilters*2)
 
-    # 1 and 2) The contribution from the uncertainties in the ZPs and the
-    #   central wavelengths of the filter curves
+    # 1) DES controlled uncertainties  
     #   This uncertainty in the ZP has seeral components
-    #   a) The SN field-to-field variation between DES and PS1
-    #   b) PS1 is not perfect, hence we reduce the uncertainty
-    #   c) The uncertainty in the measurement of the transfer to the AB system
+    #   a) The uncertainty in the differential chromatic correction (set to zero for now)
+    #   Note that this error is 100% correlated to the component of b) that comes from the filter curve
+    #   b) The uncertainty in the measurement of the transfer to the AB system
     #      using the observations of C26202
-    # Not included yet is the systematic uncertainty that comes from
-    # chromatic correction
-    # We do not include FGCM_unc as this is a statistical error that
-    # should be included in the lightcurve uncetainties
-
-    # We compute all terms but insert the JLA computed terms later
+    #   c) The SN field-to-field variation between DES and GAIA
 
     for i, filt in enumerate(filterUncertainties):
-        C_K_new[i, i] = (filt['zp'] / 1000.)**2. - PS1_unc**2. + AB_unc**2.
-        C_K_new[i+nFilters, i+nFilters] = (filt['wavelength'])**2.
+        if 'DES' in filt['filter']:
+            error_I0,error_chromatic,error_AB=FGCM.prop_unc(params,filt)
+            C_K_new[i, i] = FGCM_GAIA**2. + (error_AB)**2.+(FGCM_unc)**2. / nC26202_Observations
+            C_K_new[i, i+nFilters] = (error_AB) * filt['wavelength']
+            C_K_new[i+nFilters, i] = (error_AB) * filt['wavelength']
+            C_K_new[i+nFilters, i+nFilters] = (filt['wavelength'])**2.
+        else:
+            C_K_new[i, i] = (filt['zp'] / 1000.)**2.
 
-    # 3) Set to zero for DES
 
-    # 5) B14 3.4.1 The uncertainty in the colour of the WD system 0.5%
+    # 2a) B14 3.4.1 The uncertainty associated to the measurement of
+    # the Secondary CALSPEC standards
+    # The uncerteinty is assumed to be uncorrelated between filters
+    # It only affects the diagonal terms of the ZPs
+    # It is estmated from repeat STIS measurements of the standard
+    # AGK+81D266  Bohlin et al. 2000 AJ 120, 437 and Bohlin 1999 ISR 99-07
+
+    nObs_C26202 = 1          # It's been observed once
+    unc_transfer = 0.003     # 0.3% uncertainty
+
+    for i, filt1 in enumerate(filterUncertainties):
+        C_K_new[i, i] += unc_transfer**2. / nObs_C26202
+
+
+    # 2b) B14 3.4.1 The uncertainty in the colour of the WD system 0.5%
     # from 3,000-10,000
     # The uncertainty is computed with respect to the Bessell B filter.
     # The Bessell B filter is the filter we use in computing the dist. modulus
@@ -126,19 +137,6 @@ def compute_C_K(options):
             if i >= j:
                 C_K_new[i, j] += (slope / (waveEnd - waveStart) * (filt1['central']-B_central)) * \
                                  (slope / (waveEnd - waveStart) * (filt2['central']-B_central))
-
-    # 4) B14 3.4.1 The uncertainty associated to the measurement of
-    # the Secondary CALSPEC standards
-    # The uncerteinty is assumed to be uncorrelated between filters
-    # It only affects the diagonal terms of the ZPs
-    # It is estmated from repeat STIS measurements of the standard
-    # AGK+81D266  Bohlin et al. 2000 AJ 120, 437 and Bohlin 1999 ISR 99-07
-
-    nObs_C26202 = 1          # It's been observed once
-    unc_transfer = 0.003
-
-    for i, filt1 in enumerate(filterUncertainties):
-        C_K_new[i, i] += unc_transfer**2. / nObs_C26202
 
     C_K_new = C_K_new+C_K_new.T-numpy.diag(C_K_new.diagonal())
 

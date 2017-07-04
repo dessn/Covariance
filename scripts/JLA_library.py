@@ -32,19 +32,43 @@ class filterCurve:
         flux=interpolate.interp1d(spectrum.wave,spectrum.flux)(wave+offset*10.)
         return (trans*flux*wave).sum()  # The extra lambda term arrises because we are working with photon counting devices
 
-    def AB(self,spectrum,offset=0):
+    def I0(self,offset=0):
+        # Computes the I0 integral in Burke et al.
+        step=1.0
+        wave=numpy.arange(numpy.min(self.wave),numpy.max(self.wave),step)+offset
+        trans=interpolate.interp1d(self.wave,self.trans)(wave-offset)
+        return (trans / wave).sum()
+
+    def I1(self,mean,offset=0):
+        # Computes the I1 integral in Burke et al.
+        step=1.0
+        wave=numpy.arange(numpy.min(self.wave),numpy.max(self.wave),step)+offset
+        trans=interpolate.interp1d(self.wave,self.trans)(wave-offset)
+        return (trans * (wave-mean) / wave).sum()
+
+    def mean(self):
+        # Computes the mean photon wavelength
+        # Eq. 12 in Burke et al.
         step=1.0
         wave=numpy.arange(numpy.min(self.wave),numpy.max(self.wave),step)
         trans=interpolate.interp1d(self.wave,self.trans)(wave)
-        flux=interpolate.interp1d(spectrum.wave,spectrum.flux)(wave+offset)
+        return trans.sum() / (trans / wave).sum()
+
+    def AB(self,spectrum,offset=0):
+        # Offset is a wavelength offset in the filter
+        step=1.0
+        wave=numpy.arange(numpy.min(self.wave),numpy.max(self.wave),step)+offset
+        trans=interpolate.interp1d(self.wave,self.trans)(wave-offset)
+        flux=interpolate.interp1d(spectrum.wave,spectrum.flux)(wave)
         # AB = 0, corresponds to a flux density of 3631 Jy
         # 1 Jy = 1e-23 erg/s/cm^2/Hz
         # We set Plancks constant to 1 as this factors out
         # h=6.62607e-27 # erg.s
         h=1.0
         c=2.99792e18  # Angstrom/s
-        int1=flux * trans * wave / h / c
-        int2= 3631e-23 * trans / wave / h
+        # With the lux of the objects in f_lambda
+        int1=flux * trans * (wave) / h / c
+        int2= 3631e-23 * trans / (wave) / h
         return -2.5*numpy.log10(int1.sum() / int2.sum())
 
     def eff(self):
@@ -58,19 +82,22 @@ class filterCurve:
 
 class spectrum:
     """A spectrum"""
-    def __init__(self,spectrum):
-        file=open(spectrum,'r')
+    def __init__(self,spectrum,format='ASCII'):
         wave=[]
         flux=[]
-        for line in file.readlines():
-            if line[0]!='#':
-                entries=line.split()
-                wave.append(float(entries[0]))
-                flux.append(float(entries[1]))
-        file.close()
-        self.wave=numpy.array(wave)        
-        self.flux=numpy.array(flux)
-       
+        if format=='ASCII':
+            file=open(spectrum,'r')
+            for line in file.readlines():
+                if line[0]!='#':
+                    entries=line.split()
+                    wave.append(float(entries[0]))
+                    flux.append(float(entries[1]))
+            file.close()
+            self.wave=numpy.array(wave)        
+            self.flux=numpy.array(flux)
+        else:
+            self.wave=spectrum['WAVELENGTH']        
+            self.flux=spectrum['FLUX']
         return
 
 
