@@ -387,6 +387,7 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
 
 def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     # Write the result and the covariance matrix to the area you want to work in
+    print os.environ['SALTPATH']
     try:
         os.mkdir(workArea)
     except:

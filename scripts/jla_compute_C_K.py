@@ -10,14 +10,7 @@ from optparse import OptionParser
 #
 # Written specifically for the JLA-like analysis of the DES spectroscopically
 # confirmed sample
-# For Y3A1, the calibration consists of a number of systematic uncertainties
-# 1) Those controlled by DES
-# 1a) The differential chromatic correction between tertiary standards and the SNe
-# 1b) The AB offset
-# 1c) The large scale uniformity of the survey
-# 2) Those controlled by STScI
-# 2a) The calibration of the secondary standards from the primary HST standards
-# 2b) Definition of the absoluted SEDs of the primary HST standards
+# See 
 
 def compute_C_K(options):
     import JLA_library as JLA
@@ -34,10 +27,11 @@ def compute_C_K(options):
     nDim = 46  # The number of elements in the DES C_Kappa matrix
     C_K_DES = numpy.zeros(nDim * nDim).reshape(nDim, nDim)
 
-    FGCM_GAIA = 0.0066            # 6.6 mmag RMS scatter between FGCM and GAIA
-    nC26202_Observations = 20     # Number of times C26202 has been observed
-    FGCM_unc = 0.005              # The RMS scatter in FGCM standard magnitudes
-    chromatic_differential = 0.0  # Set to zero for now
+    SMP_ZP = 0.001                                 # The accuracy of the SMP ZPs
+    FGCM_GAIA = 0.0066 / numpy.sqrt(2.)            # 6.6 mmag RMS scatter between FGCM and GAIA
+    nC26202_Observations = {'DES_g':133,'DES_r':21,'DES_i':27,'DES_z':78}                      # Number of times C26202 has been observed
+    FGCM_unc = 0.005                               # The RMS scatter in FGCM standard magnitudes
+    chromatic_differential = 0.0                   # Set to zero for now
 
     if options.base:
         # Read in the JLA matrix and extract the appropriate rows and columns
@@ -68,8 +62,8 @@ def compute_C_K(options):
     # effective wavelengths
 
     filterUncertainties = numpy.genfromtxt(JLA.get_full_path(params['filterUncertainties']),
-                comments='#',usecols=(0,1,2,3,5,6), dtype='S30,f8,f8,f8,f8,f8',
-                names=['filter', 'zp', 'wavelength', 'central', 'relative_ZP', 'filterFactor'])
+                comments='#',usecols=(0,1,2,3), dtype='S30,f8,f8,f8',
+                names=['filter', 'zp', 'wavelength', 'central'])
 
     # For the Bc filter of CfA, and the V1 and V2 filters of CSP,
     # we asumme that they have the same sized systematic uncertainteies as
@@ -95,7 +89,8 @@ def compute_C_K(options):
     for i, filt in enumerate(filterUncertainties):
         if 'DES' in filt['filter']:
             error_I0,error_chromatic,error_AB=FGCM.prop_unc(params,filt)
-            C_K_new[i, i] = FGCM_GAIA**2. + (error_AB)**2.+(FGCM_unc)**2. / nC26202_Observations
+            #print numpy.sqrt((error_AB)**2. + (FGCM_unc)**2. / nC26202_Observations[filt['filter']])
+            C_K_new[i, i] = FGCM_GAIA**2. + (error_AB)**2.+(FGCM_unc)**2. / nC26202_Observations[filt['filter']] + SMP_ZP**2.
             C_K_new[i, i+nFilters] = (error_AB) * filt['wavelength']
             C_K_new[i+nFilters, i] = (error_AB) * filt['wavelength']
             C_K_new[i+nFilters, i+nFilters] = (filt['wavelength'])**2.
@@ -127,26 +122,28 @@ def compute_C_K(options):
     # the Hubble constant.
 
     slope = 0.005
-    waveStart = 300.
+    waveStart = 300
     waveEnd = 1000.
-    B_central = 436.0
+    # central = 436.0 # Corresponds to B filter
+    central = 555.6   # Used in the Pantheon sample
 
     # Note that 2.5 * log_10 (1+x) ~ x for |x| << 1
     for i, filt1 in enumerate(filterUncertainties):
         for j, filt2 in enumerate(filterUncertainties):
             if i >= j:
-                C_K_new[i, j] += (slope / (waveEnd - waveStart) * (filt1['central']-B_central)) * \
-                                 (slope / (waveEnd - waveStart) * (filt2['central']-B_central))
+                C_K_new[i, j] += (slope / (waveEnd - waveStart) * (filt1['central']-central)) * \
+                                 (slope / (waveEnd - waveStart) * (filt2['central']-central))
 
     C_K_new = C_K_new+C_K_new.T-numpy.diag(C_K_new.diagonal())
 
-    # Update C_K. We do not update the terms that come from JLA
+    if options.base:
+        # We do not update 
+        sel = numpy.zeros(nDim, bool)
+        sel[0:16] = True
+        sel[23:39] = True
+        sel2d = numpy.matrix(sel).T * numpy.matrix(sel)
+        C_K_new[sel2d] = 0.0
 
-    sel = numpy.zeros(nDim, bool)
-    sel[0:16] = True
-    sel[23:39] = True
-    sel2d = numpy.matrix(sel).T * numpy.matrix(sel)
-    C_K_new[sel2d] = 0.0
     C_K_DES += C_K_new
 
     # Write out the results
@@ -160,7 +157,7 @@ if __name__ == '__main__':
 
     parser = OptionParser()
 
-    parser.add_option("-b", "--base", dest="base", default=True,
+    parser.add_option("-b", "--base", dest="base", default=False,
                       action="store_true",
                       help="Use the JLA matrix as the base")
 

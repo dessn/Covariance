@@ -2,6 +2,7 @@
 """
 
 from optparse import OptionParser
+import numpy
 import shutil
 import JLA_library as JLA
 from astropy.table import Table
@@ -20,7 +21,7 @@ def offsetFilter(filt,instrument):
         f.meta['comments'].append('Offset curve by -1nm')
     else:
         f.meta['comments']=['Offset curve by -1nm']
-    f['col1']-=10.
+#    f['col1']-=10. What was this for?
     f.write(filt,format='ascii.fast_no_header')
     return
 
@@ -49,6 +50,33 @@ def offsetZP(magsys,filt,instrument,fitmodel):
 
     return
 
+def offsetZP2(magSys,offset,filt):
+    print "Modifying ZP for %s" % (filt)
+    f=open(magSys,'r')
+    data=f.readlines()
+    f.close()
+
+    instrument=filt.split()[0]
+    filt=filt.split()[1]
+
+    f=open(magSys,'w')
+    f.write('# Offset %s ZP by %5.3f\n' % (filt,offset))
+    for line in data:
+        if len(line.strip())==0:
+            f.write("\n")
+        elif line[0] in ['#','@']:
+            f.write(line)
+        else:
+            entries=line.split()
+            if entries[0]==instrument and entries[1]==filt:
+                f.write('%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])+offset))
+            else:
+                f.write('%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])))
+
+    f.close()
+    exit()
+    return
+    
 def updateKeplercam(options,params,model):
     try:
         shutil.rmtree(options.output+'/'+model['modelNumber']+'/snfit_data/Instruments/Keplercam')
@@ -82,7 +110,15 @@ def create_Models(options):
     except:
         print "Directory %s already exists" % (options.output)
 
+    # Read in the SALT models that will be kept
     SALTmodels=Table.read(options.modelList,format='ascii',names=['ID','Description'],data_start=0)
+
+    # Read in the models for which the magnitude will be adjusted
+    try:
+        magOffsets=Table.read(options.magOffsetList,format='ascii',names=['Model','Filter','Offset','MagSys'],data_start=1,delimiter='\t',comment='#')
+    except:
+        magOffsets=[]
+
     modelList=[]
     for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
@@ -157,6 +193,13 @@ def create_Models(options):
 
         modelList.append(model['modelNumber'])
 
+    # ---- Update magnitude ZPs -----
+    for model in magOffsets:
+        if numpy.abs(model['Offset']) > 0:
+            magSys=options.output+'/'+model['Model']+'/snfit_data/MagSys/'+ model['MagSys']
+            offsetZP2(magSys,model['Offset'],model['Filter'])
+
+
     print 'We now have %d models' % (len(modelList))
     
     # ---- Copy accross the saltModels.list ----
@@ -175,6 +218,9 @@ if __name__ == '__main__':
 
     parser.add_option("-m", "--modelList", dest="modelList", default="saltModels.list",
                       help="list of models to keep")
+
+    parser.add_option("-M", "--magOffsetList", dest="magOffsetList", default="magOffsets.list",
+                      help="list of models with magnitdues that need to be updated")
 
     parser.add_option("-c", "--config", dest="config", default='DES.config',
                       help="configuration file")

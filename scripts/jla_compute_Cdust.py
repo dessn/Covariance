@@ -47,7 +47,10 @@ def compute_dust(options):
         j.extend([dm, dx1, dc])
     
     # But we want to compute the impact of an offset that is twice as large, hence the factor of 4 in the expression
-    cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0
+    # 2017/10/13
+    # But we want to compute the impact of an offset that is half as large, hence the factor of 4 in the denominator
+    # cdust = numpy.matrix(j).T * numpy.matrix(j) * 4.0
+    cdust = numpy.matrix(j).T * numpy.matrix(j) / 4.0
 
     date = JLA.get_date()
 
