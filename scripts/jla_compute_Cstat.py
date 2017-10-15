@@ -24,11 +24,10 @@ def compute_Cstat(options):
     nSNe = len(SNeList)
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('_smp','')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
-
 
     # -----------  Read in the data --------------------------
 

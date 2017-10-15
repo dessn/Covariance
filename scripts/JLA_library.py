@@ -208,7 +208,6 @@ def SALTmodels(saltModels):
     # We use a structured array to record the SALT models
     models=numpy.zeros(len(d),dtype=[('offset','a10'),('directory','a10')])
 
-    # For test purposes
     models['offset']=o
     models['directory']=d
 

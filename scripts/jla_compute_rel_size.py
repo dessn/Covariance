@@ -82,7 +82,7 @@ def compute_rel_size(options):
     SNeList=numpy.genfromtxt(options.SNlist,usecols=(0,2),dtype='S30,S200',names=['id','lc'])
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-','').replace('.list','').replace('_smp','')
 
     # -----------  Read in the data JLA --------------------------
 

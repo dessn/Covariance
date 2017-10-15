@@ -40,12 +40,15 @@ def compute_model(options):
     nSNe = len(SNeList)
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('_smp', '')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
 
     print 'There are %d SNe' % (nSNe)
+
+    indices = JLA.reindex_SNe(SNeList['id'], SNe)
+    SNe = SNe[indices]
 
     # For the JLA SNe
     redshift = SNe['zcmb']
@@ -53,6 +56,7 @@ def compute_model(options):
 
     # For the non JLA SNe
     redshift[replace]=SNe[replace]['zhel']
+    print len(redshift)
 
     if options.raw:
         # Data from the bottom left hand figure of Mosher et al. 2014.

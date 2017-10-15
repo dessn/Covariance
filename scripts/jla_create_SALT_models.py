@@ -51,7 +51,7 @@ def offsetZP(magsys,filt,instrument,fitmodel):
     return
 
 def offsetZP2(magSys,offset,filt):
-    print "Modifying ZP for %s" % (filt)
+    print "Modifying ZP for %s by %5.3f" % (filt,offset)
     f=open(magSys,'r')
     data=f.readlines()
     f.close()
@@ -74,7 +74,6 @@ def offsetZP2(magSys,offset,filt):
                 f.write('%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])))
 
     f.close()
-    exit()
     return
     
 def updateKeplercam(options,params,model):
@@ -194,10 +193,10 @@ def create_Models(options):
         modelList.append(model['modelNumber'])
 
     # ---- Update magnitude ZPs -----
-    for model in magOffsets:
-        if numpy.abs(model['Offset']) > 0:
-            magSys=options.output+'/'+model['Model']+'/snfit_data/MagSys/'+ model['MagSys']
-            offsetZP2(magSys,model['Offset'],model['Filter'])
+    #for model in magOffsets:
+    #    if numpy.abs(model['Offset']) > 0:
+    #        magSys=options.output+'/'+model['Model']+'/snfit_data/MagSys/'+ model['MagSys']
+    #        offsetZP2(magSys,model['Offset'],model['Filter'])
 
 
     print 'We now have %d models' % (len(modelList))
@@ -218,9 +217,6 @@ if __name__ == '__main__':
 
     parser.add_option("-m", "--modelList", dest="modelList", default="saltModels.list",
                       help="list of models to keep")
-
-    parser.add_option("-M", "--magOffsetList", dest="magOffsetList", default="magOffsets.list",
-                      help="list of models with magnitdues that need to be updated")
 
     parser.add_option("-c", "--config", dest="config", default='DES.config',
                       help="configuration file")

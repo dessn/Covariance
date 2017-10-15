@@ -77,7 +77,7 @@ def compute_nonIa(options):
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNeList):
-        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i] = SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('_smp','')
 
     lcfile = JLA.get_full_path(params[options.lcfits])
     SNe = Table.read(lcfile, format='fits')
@@ -86,8 +86,7 @@ def compute_nonIa(options):
     SNe['bin'] = 0
     SNe['eval'] = False
 
-    # make order of data (in SNe) match SNeList
-    
+    # make the order of data (in SNe) match SNeList
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
 

@@ -13,7 +13,7 @@ def compute_diag(SNe):
     lens = 0.055
     #c = 3e5 #km/s
     sigma_lens = 0.055 * SNe['zcmb']
-    sigma_pecvel = 5*5e-4/(np.log(10) *SNe['zcmb'])
+    sigma_pecvel = 5*7.3e-4/(np.log(10) *SNe['zcmb']) # See eq. 13 in B14
     sigma_coh = np.array([coh_dict[JLA.survey(sn)] for sn in SNe])
     return np.column_stack((sigma_coh, sigma_lens, sigma_pecvel))
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     SN_data = Table.read(lcfile, format='fits')
 
     SN_list_long = np.genfromtxt(options.SNlist, usecols=(0), dtype='S30')
-    SN_list = [name.replace('lc-', '').replace('.list', '') for name in SN_list_long]
+    SN_list = [name.replace('lc-', '').replace('.list', '').replace('_smp','') for name in SN_list_long]
     SN_indices = JLA.reindex_SNe(SN_list, SN_data)
     SN_data = SN_data[SN_indices]
 

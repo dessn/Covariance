@@ -55,7 +55,7 @@ def compute_Ccal(options):
 
 
     for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '')
+        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('_smp', '')
 
     # ----------  Read in the SN light curve fits ------------
     # This is used to get the SN redshifts which are used in smoothing the Jacbian
@@ -66,6 +66,9 @@ def compute_Ccal(options):
     # Make sure that the order is correct
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
+    if len(indices) != len(SNeList['id']):
+        print "We are missing SNe"
+        exit()
 
     # -----------  Set up the structures to handle the different salt models -------
     # The first model is the unperturbed salt model
