@@ -228,13 +228,12 @@ def fitLC(inputFile, outputFile, salt_prefix='',forceDayMax=False):
                 DayMax=entries[1]
                 break
         cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile + " -f DayMax " + DayMax
-        print cmd
     else:
         cmd = salt_prefix + 'snfit '+inputFile+' -o '+outputFile
     # One should write any errors to a log file
     FNULL = open(os.devnull, 'w')
-    sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
-    #os.system(cmd)
+    sp.call(cmd, shell=True, stdout=FNULL, stderr=sp.STDOUT)
+    FNULL.close()
     return
 
 def modelLC(inputFile, resultFile, modelFile, salt_prefix=''):
@@ -246,7 +245,7 @@ def modelLC(inputFile, resultFile, modelFile, salt_prefix=''):
     sp.call(cmd,shell=True, stdout=FNULL, stderr=sp.STDOUT)
     return
 
-def computeOffsets(nominalResult,perturbedResult):
+def computeOffsets(nominalResult,perturbedResult,getRedshift=False):
     """ returns offsets in m_B, X_1 and C when the fit is perturbed 
     """
     # Nominal result
@@ -290,6 +289,15 @@ def computeOffsets(nominalResult,perturbedResult):
             if entries[0]=='RestFrameMag_0_B':
                 M_perturbed=float(entries[1])
                 break
+
+    if getRedshift:
+        for line in lines:
+            entries=line.split()
+            if line!='\n':
+                if entries[0]=='Redshift':
+                    z=float(entries[1])
+                    break
+        return M_perturbed-M_nominal,X_perturbed-X_nominal,C_perturbed-C_nominal,z
 
     return M_perturbed-M_nominal,X_perturbed-X_nominal,C_perturbed-C_nominal
 
