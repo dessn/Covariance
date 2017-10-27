@@ -62,8 +62,8 @@ def compute_C_K(options):
     # effective wavelengths
 
     filterUncertainties = numpy.genfromtxt(JLA.get_full_path(params['filterUncertainties']),
-                comments='#',usecols=(0,1,2,3), dtype='S30,f8,f8,f8',
-                names=['filter', 'zp', 'wavelength', 'central'])
+                comments='#',usecols=(0,1,2,3,4), dtype='S30,f8,f8,f8,f8',
+                names=['filter', 'zp', 'zp_off', 'wavelength', 'central'])
 
     # For the Bc filter of CfA, and the V1 and V2 filters of CSP,
     # we asumme that they have the same sized systematic uncertainteies as
@@ -95,7 +95,7 @@ def compute_C_K(options):
             C_K_new[i+nFilters, i] = (error_AB) * filt['wavelength']
             C_K_new[i+nFilters, i+nFilters] = (filt['wavelength'])**2.
         else:
-            C_K_new[i, i] = (filt['zp'] / 1000.)**2.
+            C_K_new[i, i] = (filt['zp'] / 1000.)**2. + (filt['zp_off'] / 3. / 1000.)**2.
 
 
     # 2a) B14 3.4.1 The uncertainty associated to the measurement of
