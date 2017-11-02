@@ -28,7 +28,10 @@ def compute_C_K(options):
     C_K_DES = numpy.zeros(nDim * nDim).reshape(nDim, nDim)
 
     SMP_ZP = 0.001                                 # The accuracy of the SMP ZPs
-    FGCM_GAIA = 0.0066 / numpy.sqrt(2.)            # 6.6 mmag RMS scatter between FGCM and GAIA
+    # 6.6 mmag RMS scatter between FGCM and GAIA
+    # The first factor of sqrt(2) comes from asuuming that GAIA and DES contrinute eually to the error
+    # The seconf factor of sqrt(2) arises bevause we are taking the difference between two points, one wher ethe standard is, and another where the SN is.
+    FGCM_GAIA = 0.0066 / numpy.sqrt(2.) * numpy.sqrt(2.)    
     nC26202_Observations = {'DES_g':133,'DES_r':21,'DES_i':27,'DES_z':78}                      # Number of times C26202 has been observed
     FGCM_unc = 0.005                               # The RMS scatter in FGCM standard magnitudes
     chromatic_differential = 0.0                   # Set to zero for now
@@ -91,6 +94,7 @@ def compute_C_K(options):
             error_I0,error_chromatic,error_AB=FGCM.prop_unc(params,filt)
             #print numpy.sqrt((error_AB)**2. + (FGCM_unc)**2. / nC26202_Observations[filt['filter']])
             C_K_new[i, i] = FGCM_GAIA**2. + (error_AB)**2.+(FGCM_unc)**2. / nC26202_Observations[filt['filter']] + SMP_ZP**2.
+            print '%s %5.4f' % (filt['filter'],numpy.sqrt(C_K_new[i, i]))
             C_K_new[i, i+nFilters] = (error_AB) * filt['wavelength']
             C_K_new[i+nFilters, i] = (error_AB) * filt['wavelength']
             C_K_new[i+nFilters, i+nFilters] = (filt['wavelength'])**2.
@@ -133,7 +137,7 @@ def compute_C_K(options):
             if i >= j:
                 C_K_new[i, j] += (slope / (waveEnd - waveStart) * (filt1['central']-central)) * \
                                  (slope / (waveEnd - waveStart) * (filt2['central']-central))
-
+                
     C_K_new = C_K_new+C_K_new.T-numpy.diag(C_K_new.diagonal())
 
     if options.base:

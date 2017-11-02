@@ -3,7 +3,7 @@ import JLA_library as JLA
 import numpy
 import pyfits as fits
 
-def prop_unc(params,filt):
+def prop_unc(params,filt,spectrum=None):
 
     # Use the filterwheel to find the filename of the filter
     filterDir=params['DES_instrument']
@@ -33,6 +33,10 @@ def prop_unc(params,filt):
 
     # iii) The error in the AB offset
     # We use the standard filter curve to compute the AB offset
-    calspec=JLA.spectrum(fits.getdata(JLA.get_full_path(params['calspec']),1),'CALSPEC')
+    if spectrum==None:
+        calspec=JLA.spectrum(fits.getdata(JLA.get_full_path(params['calspec']),1),'CALSPEC')
+    else:
+        calspec=JLA.spectrum(fits.getdata(JLA.get_full_path(spectrum),1),'CALSPEC')
+
     error_AB=filterCurve.AB(calspec)-filterCurve.AB(calspec,offset)
     return error_I0,error_chromatic,error_AB
