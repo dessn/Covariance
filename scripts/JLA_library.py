@@ -213,10 +213,16 @@ def SALTmodels(saltModels):
 
     return models
 
-def fitLC(inputFile, outputFile, salt_prefix='',forceDayMax=False):
+def fitLC(inputFile, outputFile, salt_prefix='',forceDayMax=False, salt_path=None):
     """fits the lightcurve with the specified SALT2.4 lightcurve fitter;
     calls snfit (can specify path to executable)
     """
+
+    # salt_path is where the SALT2 model and instrument files are located
+    # salt_prefix is the where the snls code is located
+
+    if salt_path!=None:
+        os.environ['SALTPATH']=salt_path
     if forceDayMax:
         # Get the data of maximum light
         f=open(inputFile)
@@ -316,6 +322,7 @@ def getCovMatfile(inputFile):
     return None
 
 def getDateOfMax(inputFile):
+    print inputFile
     f=open(inputFile)
     lines=f.readlines()
     f.close()
@@ -329,7 +336,7 @@ def getDateOfMax(inputFile):
 
 
 
-def insertDateOfMax(SN, inputFile, outputFile, force=False):
+def insertDateOfMax(SN, inputFile, outputFile, force=False, params={}):
     # If the date of Max is already included skip
 
     try:
@@ -337,7 +344,8 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
     except:
         pass
     cwd=os.getcwd()
-    workArea='workArea/'+SN
+    SNname=SN.replace("lc-","").replace("_smp","").replace(".list","")
+    workArea='workArea/'+SNname
 
     try:
         os.mkdir(workArea)
@@ -359,12 +367,12 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
 
     if dayMax and not force:
         cmd='cp %s %s' % (inputFile,outputFile)
-        print 'Copying the lightcurve for %s' % SN 
+        print 'Copying the lightcurve for %s' % SNname 
         sp.call(cmd,shell=True)
     else:
-        print 'Fitting and adjusting %s' % SN 
-        outputFile1=SN+'.dat3'
-        fitLC(inputFile, outputFile1)
+        print 'Fitting and adjusting %s' % SNname 
+        outputFile1=SNname+'.dat3'
+        fitLC(inputFile, outputFile1, salt_prefix='', forceDayMax=False, salt_path=get_full_path(params['defsaltModel']))
         date,error=getDateOfMax(outputFile1)
         # Remove the old date of max and insert the new one
         lc=open(inputFile)
@@ -392,9 +400,16 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False):
 
     return None
 
-def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
+def compute_extinction_offset(SN, inputFile, offset, workArea, salt_path=''):
+    # salt_path is where the SALT2 model and instrument files are located
+
     # Write the result and the covariance matrix to the area you want to work in
+    if salt_path!='':
+        os.environ['SALTPATH']=salt_path
     print os.environ['SALTPATH']
+
+    salt_prefix=''
+
     try:
         os.mkdir(workArea)
     except:
@@ -425,7 +440,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     if os.path.isfile(outputFile1):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile1)
     else:
-        fitLC(inputFile1,outputFile1,salt_prefix,True)
+        fitLC(inputFile1, outputFile1, salt_prefix, True, salt_path)
 
     # Adjust the value of E(B-V)
     inputFile2=inputFile1+'2'
@@ -436,9 +451,8 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_prefix=''):
     if os.path.isfile(outputFile2):
         print 'Skipping %s, output file %s already exists' % (SN,outputFile2)
     else:
-        fitLC(inputFile2,outputFile2,salt_prefix,True)
+        fitLC(inputFile2, outputFile2, salt_prefix, True, salt_path)
 
-    
     f=open(outputFile1)
     lines=f.readlines()
     f.close()
@@ -518,3 +532,11 @@ def smoothJLA():
     # Adjust the smoothness parameter of the spline so that the summed difference between the 
     # spline and the data squared is the number of SN time the scatter squared.
     return None
+
+def A_fn(alpha,beta, n):
+    A = numpy.zeros((n,3*n))
+    for i in range(n):
+        A[i,3*i] += 1
+        A[i,3*i+1] += alpha
+        A[i,3*i+2] += -beta
+    return A

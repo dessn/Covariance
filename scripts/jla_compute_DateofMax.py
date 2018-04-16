@@ -12,12 +12,12 @@ def adjustExtinction(inputFile,extinctionFactor):
 
     mwebv=0.0
     for line in lines:
-        if "MWEBV" in line:
+        if "@MWEBV"==line.split()[0]:
            mwebv=float(line.split()[1])
            break
 
     if mwebv>0:
-        # Remove the old date of max and insert the new one
+        # Remove the old extinction
         lc=open(inputFile,'w')
         lc.write('@MWEBV %4.3f\n' % (mwebv * extinctionFactor))
         for line in lines:
@@ -72,7 +72,8 @@ def compute_date_of_max(options):
 
         print 'Examining %s' % SN['name']
         # If needed refit the lightcurve and insert the date of maximum into the input file
-        JLA.insertDateOfMax(SN['name'].strip(),inputFile,outputFile,options.force)
+        JLA.insertDateOfMax(SN['name'].strip(),inputFile,outputFile,options.force,params)
+        # Shouldn't we adjust the extinction first
         if options.adjustExtinction:
             adjustExtinction(outputFile,extinctionFactor)
     return

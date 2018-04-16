@@ -30,7 +30,7 @@ def compute_C_K(options):
     SMP_ZP = 0.001                                 # The accuracy of the SMP ZPs
     # 6.6 mmag RMS scatter between FGCM and GAIA
     # The first factor of sqrt(2) comes from asuuming that GAIA and DES contrinute eually to the error
-    # The seconf factor of sqrt(2) arises bevause we are taking the difference between two points, one wher ethe standard is, and another where the SN is.
+    # The second factor of sqrt(2) arises because we are taking the difference between two points, one where the standard is, and another where the SN is.
     FGCM_GAIA = 0.0066 / numpy.sqrt(2.) * numpy.sqrt(2.)    
     nC26202_Observations = {'DES_g':133,'DES_r':21,'DES_i':27,'DES_z':78}                      # Number of times C26202 has been observed
     FGCM_unc = 0.005                               # The RMS scatter in FGCM standard magnitudes

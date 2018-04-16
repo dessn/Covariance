@@ -40,10 +40,10 @@ def modify(dst):
 surveys=OrderedDict()
 
 surveys['CSP+CfA']={'input':'nearby/CfA-CSP_overlap/concat','output':'CfA-CSP_overlap'}
-surveys['CSP']={'input':'nearby/CSP/PS1s','output':'CSP'}
-surveys['CfA3']={'input':'nearby/CfA3/PS1s','output':'CfA3'}
-surveys['CfA4']={'input':'nearby/CfA4/PS1s','output':'CfA4'}
-surveys['DES3yr']={'input':'DES_3yr_spec/SMPv1','output':'DES'}
+surveys['CSP']={'input':'nearby/CSP/DS17','output':'CSP'}
+surveys['CfA3']={'input':'nearby/CfA3/DS17','output':'CfA3'}
+surveys['CfA4']={'input':'nearby/CfA4/DS17','output':'CfA4'}
+surveys['DES3yr']={'input':'DES_3yr_spec/SMPv3','output':'DES'}
 
 params=JLA.build_dictionary(options.config)
 

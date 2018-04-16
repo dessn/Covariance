@@ -50,11 +50,10 @@ def compute_model(options):
     indices = JLA.reindex_SNe(SNeList['id'], SNe)
     SNe = SNe[indices]
 
-    # For the JLA SNe
     redshift = SNe['zcmb']
     replace=(redshift < 0)
 
-    # For the non JLA SNe
+    # For SNe that do not have the CMB redshift
     redshift[replace]=SNe[replace]['zhel']
     print len(redshift)
 

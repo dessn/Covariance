@@ -16,7 +16,7 @@ def compute_dust(options):
 
     SNelist = numpy.genfromtxt(options.SNlist,
                                usecols=(0, 2),
-                               dtype='S30,S100',
+                               dtype='S30,S110',
                                names=['id', 'lc'])
 
     for i, SN in enumerate(SNelist):
@@ -26,9 +26,9 @@ def compute_dust(options):
 
     params=JLA.build_dictionary(options.config)
     try:
-        salt_prefix = params['saltPrefix']
+        salt_path = JLA.get_full_path(params['defsaltModel'])
     except KeyError:
-        salt_prefix = ''
+        salt_path = ''
         
     # -----------   The lightcurve fitting -------------------
 
@@ -43,7 +43,7 @@ def compute_dust(options):
         inputFile = SN['lc']
         print 'Fitting %s ' % (SN['lc'])
         workArea = JLA.get_full_path(options.workArea)
-        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_prefix)
+        dm, dx1, dc = JLA.compute_extinction_offset(SN['id'], inputFile, offset, workArea, salt_path)
         j.extend([dm, dx1, dc])
     
     # But we want to compute the impact of an offset that is twice as large, hence the factor of 4 in the expression

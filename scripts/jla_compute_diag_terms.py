@@ -13,7 +13,7 @@ def compute_diag(SNe):
     lens = 0.055
     #c = 3e5 #km/s
     sigma_lens = 0.055 * SNe['zcmb']
-    sigma_pecvel = 5*7.3e-4/(np.log(10) *SNe['zcmb']) # See eq. 13 in B14
+    sigma_pecvel = 5*7.6e-4/(np.log(10) *SNe['zcmb']) # See eq. 13 in B14
     sigma_coh = np.array([coh_dict[JLA.survey(sn)] for sn in SNe])
     return np.column_stack((sigma_coh, sigma_lens, sigma_pecvel))
 

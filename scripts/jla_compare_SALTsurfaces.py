@@ -81,8 +81,8 @@ def compareSALTsurfaces(surface):
     
     # -----------  Read in the SALT models -------------------
 
-    surface1=readSALTsurface(JLA.get_full_path(params['orig'])+'salt2-4/')
-    surface2=readSALTsurface(JLA.get_full_path(params['comp'])+'salt2-4/')
+    surface1=readSALTsurface(JLA.get_full_path(params['model1'])+'salt2-4/')
+    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
     
 
     # -----------  Plot the surfaces ----------------------
@@ -122,7 +122,7 @@ def compareSALTsurfaces(surface):
         p+=coeff*reduced_wave**(exponent+2)
 
     A_wave=p*C
-    ax2.plot(wave, A_wave,label='original')
+    ax2.plot(wave, A_wave,label='model1')
 
     alpha=1.0
     for coeff in surface2.colour_law['coeff']:
@@ -132,7 +132,7 @@ def compareSALTsurfaces(surface):
         p+=coeff*reduced_wave**(exponent+2)
 
     A_wave=p*C
-    ax2.plot(wave, A_wave, label='adjusted')
+    ax2.plot(wave, A_wave, label='model2')
 
     # Plot CCM R_V=3.1
     E_BV=0.1
@@ -153,9 +153,10 @@ def compareSALTsurfaces(surface):
     ax2.plot(wave,a_wave-a_B,label='F99 R_V=3.1')
     
     ax2.legend()
-
+    plt.savefig(options.config.replace(".config",".png"))
     plt.show()
     plt.close()
+    
 
     return
 

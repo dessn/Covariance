@@ -35,6 +35,11 @@ def add_covar_matrices(covmatrices,diag):
     for matrix in matrices:
         add += matrix
 
+
+    # Write out the matrix. This is eta in equation 13 of B14
+    date=JLA.get_date()
+    fits.writeto('C_eta_%s_%s.fits' % (options.suffix,date), add, clobber=True)
+
     # Compute A
 
     nSNe = size[0]/3
@@ -153,13 +158,12 @@ def compute_rel_size(options):
     else:
         C=add_covar_matrices(covmatrices,params['diag'])
         date=JLA.get_date()
-        fits.writeto('C_total_%s.fits' % (date), C, clobber=True)
+        fits.writeto('C_total_%s_%s.fits' % (options.suffix,date), C, clobber=True)
 
     if options.save:
         print "Saving the matrices as a tar file"
 
     Cinv=numpy.matrix(C).I
-
     
     # Construct eta, a 3n vector
 
@@ -238,6 +242,9 @@ if __name__ == '__main__':
 
     parser.add_option("-n", "--name", dest="name", default=None,
                       help="Name of the new matrix")
+
+    parser.add_option("-e", "--suffix", dest="suffix", default='',
+                      help="Suffix to use for the output matrices")
 
 
 

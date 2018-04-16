@@ -38,15 +38,23 @@ def compareSALTmodels(options):
 
     params=JLA.build_dictionary(options.config)
 
-    # ---------- Read in the SNe list -------------------------
+    # ---------- Read in the SNe lists -------------------------
 
-    SNeList = Table(numpy.genfromtxt(options.SNlist,
+    SNeList1 = Table(numpy.genfromtxt(params['data1'],
                                      usecols=(0, 2),
                                      dtype='S30,S100',
                                      names=['id', 'lc']))
 
-    for i,SN in enumerate(SNeList):
-        SNeList['id'][i]=SNeList['id'][i].replace('lc-', '').replace('.list', '').replace('_smp', '')
+    SNeList2 = Table(numpy.genfromtxt(params['data2'],
+                                     usecols=(0, 2),
+                                     dtype='S30,S100',
+                                     names=['id', 'lc']))
+
+    for i,SN in enumerate(SNeList1):
+        SNeList1['id'][i]=SNeList1['id'][i].replace('lc-', '').replace('.list', '').replace('_smp', '')
+
+    for i,SN in enumerate(SNeList2):
+        SNeList2['id'][i]=SNeList2['id'][i].replace('lc-', '').replace('.list', '').replace('_smp', '')
 
     salt_prefix=''
 
@@ -61,45 +69,44 @@ def compareSALTmodels(options):
     except:
         pass
 
-    for i,SN in enumerate(SNeList):
+    for SN1,SN2 in zip(SNeList1,SNeList2):
         try:
-            os.mkdir(options.workArea+'/'+SN['id'])
+            os.mkdir(options.workArea+'/'+SN1['id'])
         except:
             pass
         
         # Fit the SNe with one model, retrieve the results
-        SALTmodel='orig'
-        orig=runSALT(params[SALTmodel],SALTmodel,salt_prefix,SN['lc'],SN['id'])
+        SALTmodel='model1'
+        model1=runSALT(params[SALTmodel],SALTmodel,salt_prefix,SN1['lc'],SN1['id'])
 
         # Fit the SNe with the second model, retrieve the results
-        SALTmodel='comp'
-        comp=runSALT(params[SALTmodel],SALTmodel,salt_prefix,SN['lc'],SN['id'])
+        SALTmodel='model2'
+        model2=runSALT(params[SALTmodel],SALTmodel,salt_prefix,SN2['lc'],SN2['id'])
 
-        result=JLA.computeOffsets(orig,comp,getRedshift=True)
+        result=JLA.computeOffsets(model1,model2,getRedshift=True)
         dM.append(result[0])
         dX.append(result[1])
         dC.append(result[2])
         z.append(result[3])
-        print '%20s at z=%4.3f dM: %7.4f\tdX: %7.4f\tdC:%7.4f' % (SN['id'],z[-1],dM[-1],dX[-1],dC[-1])
+        print '%20s at z=%4.3f dM: %7.4f\tdX: %7.4f\tdC:%7.4f' % (SN1['id'],z[-1],dM[-1],dX[-1],dC[-1])
         #C.extend([dM,dX,dC])
         
     diff=Table([dM,dX,dC,z],names=['dM','dX','dC','z'])
     date=JLA.get_date()
 
-    #fits.writeto('C_comp_%s.fits' % (date), numpy.array(numpy.matrix(C).T*numpy.matrix(C)), clobber=True) 
-
     fig=plt.figure()
     ax=fig.add_subplot(111)
     alpha=0.141
     beta=3.101
-    dmu=diff['dM']-alpha*diff['dX']+beta*diff['dC']
+    dmu=diff['dM']+alpha*diff['dX']-beta*diff['dC']
     ax.plot(diff['z'],dmu,'ro')
     ax.set_xlabel('redshift')
-    ax.set_ylabel('dmu')
+    ax.set_ylabel('$\Delta \mu$')
+    ax.set_title(options.output)
     ax.set_ylim(-0.3,0.3)
     print 'NMAD %6.3f off z<0.1 %6.3f off z>0.1 %6.3f' % (nmad(dmu),np.median(dmu[diff['z']<0.1]),np.median(dmu[diff['z']>0.1]))
 
-    plt.savefig('diff.png')
+    plt.savefig('%s.png' % (options.output))
     plt.show()
     plt.close()
 
@@ -115,8 +122,8 @@ if __name__ == '__main__':
     parser.add_option("-w", "--workArea", dest="workArea", default="workArea",
                       help="Work area that stores the light curve fits")
 
-    parser.add_option("-s", "--SNlist", dest="SNlist",
-                      help="List of SN")
+    parser.add_option("-o", "--output", dest="output", default="diff",
+                      help="Output file")
 
     (options, args) = parser.parse_args()
 
