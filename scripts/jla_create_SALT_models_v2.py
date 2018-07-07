@@ -21,8 +21,8 @@ def offsetFilter(filt,instrument):
         f.meta['comments'].append('Offset curve by -1nm')
     else:
         f.meta['comments']=['Offset curve by -1nm']
-#    f['col1']-=10. What was this for?
-    f.write(filt,format='ascii.fast_no_header')
+    f['col1']-=10. # Subtract 10nm from filter curve
+    f.write(filt,format='ascii.fast_no_header',overwrite=True)
     return
 
 def offsetZP(magsys,filt,instrument,fitmodel):
@@ -33,7 +33,7 @@ def offsetZP(magsys,filt,instrument,fitmodel):
     f.close()
 
     f=open(magsys,'w')
-    f.write('# Offset %s ZP by 0.01\n' % filt)
+    f.write('# Offset %s %s ZP by 0.01\n' % (instrument,filt))
     for line in data:
         if len(line.strip())==0:
             f.write("\n")
@@ -43,6 +43,7 @@ def offsetZP(magsys,filt,instrument,fitmodel):
             entries=line.split()
             if entries[0]==instrument and entries[1]==filt:
                 f.write('%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])+0.01))
+                f.write('#%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])))
             else:
                 f.write('%s %s %7.3f\n' % (entries[0],entries[1],float(entries[2])))
 
@@ -110,17 +111,15 @@ def create_Models(options):
         print "Directory %s already exists" % (options.output)
 
     # Read in the SALT models that will be kept
-    SALTmodels=Table.read(options.modelList,format='ascii',names=['ID','Description'],data_start=0)
-
-    # Read in the models for which the magnitude will be adjusted
-    try:
-        magOffsets=Table.read(options.magOffsetList,format='ascii',names=['Model','Filter','Offset','MagSys'],data_start=1,delimiter='\t',comment='#')
-    except:
-        magOffsets=[]
+    SALTmodels=Table.read(options.modelList,format='ascii',names=['ID','Type','Instrument','ShortName','fitmodel','MagSys','Filter'],data_start=0)
 
     modelList=[]
     for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
+
+            selection=(SALTmodels['ID']==model)
+            modelSel=SALTmodels[selection]
+
             print "Copying across %s" % model
             modelList.append(model)
             shutil.copytree(options.base+'/'+model,options.output+'/'+model)
@@ -130,15 +129,27 @@ def create_Models(options):
             shutil.copy(JLA.get_full_path(params['fitmodel']),options.output+'/'+model+'/snfit_data/fitmodel.card')
             # Add the DECam instrument files
             shutil.copytree(JLA.get_full_path(params['DES_instrument']),options.output+'/'+model+'/snfit_data/Instruments/DECam')
+
             # Update the Keplercam instrument files
+            # We added the Bc filter
             shutil.rmtree(options.output+'/'+model+'/snfit_data/Instruments/Keplercam')
             shutil.copytree(JLA.get_full_path(params['CfA_instrument']),options.output+'/'+model+'/snfit_data/Instruments/Keplercam')
-            ## Serious bug - filter and ZP offsets are lost here!
+
+            # Since we overwrite the Keplercam instrument files, we need to offset offset the filter curves
+            if modelSel['Type']=='Filter' and modelSel['Instrument']==['KEPLERCAM']:
+                print 'Adjusting filter for model %s' % modelSel['ID'][0]
+                offsetFilter(options.output+'/'+modelSel['ID'][0]+'/snfit_data/'+modelSel['fitmodel'][0]+'/'+modelSel['Filter'][0],modelSel['Instrument'][0])
+
             # Add DES magnitude system
             shutil.copy(JLA.get_full_path(params['DES_magsys']),options.output+'/'+model+'/snfit_data/MagSys/')
-            # Update the CfA magnitude system
+
+            # Update the CfA and CSP magnitude systems
             shutil.copy(JLA.get_full_path(params['CfA_magsys']),options.output+'/'+model+'/snfit_data/MagSys/')
-            # This is not needed for CSP as the instrument files and magnitude system have not chnaged since JLA
+
+            # Since we update the magnitude systems, we need to offset the ZPs for KEPLERCAM, 4SHOOTER, and SWOPE
+            if modelSel['Type']=='ZP' and modelSel['Instrument'] in ['KEPLERCAM','4SHOOTER2','SWOPE2']:
+                print 'Adjusting ZP for model %s' % modelSel['ID'][0]
+                offsetZP(options.output+'/'+modelSel['ID'][0]+'/snfit_data/MagSys/'+modelSel['MagSys'][0],modelSel['ShortName'][0],modelSel['Instrument'][0],modelSel['fitmodel'][0])
         else:
             print "Excluding %s" % model
 
@@ -192,13 +203,6 @@ def create_Models(options):
 
 
         modelList.append(model['modelNumber'])
-
-    # ---- Update magnitude ZPs -----
-    #for model in magOffsets:
-    #    if numpy.abs(model['Offset']) > 0:
-    #        magSys=options.output+'/'+model['Model']+'/snfit_data/MagSys/'+ model['MagSys']
-    #        offsetZP2(magSys,model['Offset'],model['Filter'])
-
 
     print 'We now have %d models' % (len(modelList))
     
