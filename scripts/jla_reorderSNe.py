@@ -24,7 +24,7 @@ def reorderSNe(options):
                                names=['id', 'lc']))
 
 
-    # -----------  Read in the file that species the ordering of the matrix produced by Cstat ------------
+    # -----------  Read in the file that specifies the ordering of the matrix produced by Cstat ------------
     statList = Table(numpy.genfromtxt(options.input,
                                       usecols=(0,1),
                                       dtype='S30,float',
@@ -32,18 +32,18 @@ def reorderSNe(options):
 
 
     # We use the -9 as a way to catch errors.
-    reindex=numpy.zeros(len(statList),int)-9
+    reindex=numpy.zeros(len(SNeList),int)-9
 
     for i,SNname in enumerate(SNeList['id']):
         name=SNname.replace("lc-","").replace(".list","").replace('_smp','')
-        print name
+        print i,name
         for j,SNname2 in enumerate(statList['id']):
             if SNname2 == name or ("SDSS"+SNname2.replace(".0","") == name and "SDSS" in name) or \
                     (SNname2.replace("sn","")==name.replace("sn","")) or ("DES" in name and "DES_0"+SNname2==name):
                 if reindex[i]!=-9:
                     print SNname,SNname2
                 reindex[i]=j
-                #print SNname,SNname2,i,j
+                print SNname,SNname2,i,j
                 
     for index,value in enumerate(reindex):
         if value==-9:

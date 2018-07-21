@@ -114,6 +114,7 @@ def create_Models(options):
     SALTmodels=Table.read(options.modelList,format='ascii',names=['ID','Type','Instrument','ShortName','fitmodel','MagSys','Filter'],data_start=0)
 
     modelList=[]
+    # Go through the base models
     for model in os.listdir(JLA.get_full_path(options.base)):
         if model in SALTmodels['ID']:
 
@@ -131,7 +132,7 @@ def create_Models(options):
             shutil.copytree(JLA.get_full_path(params['DES_instrument']),options.output+'/'+model+'/snfit_data/Instruments/DECam')
 
             # Update the Keplercam instrument files
-            # We added the Bc filter
+            # We added the revised filter curves B,V,r, and i, and Bc, Vc, rc, and ic
             shutil.rmtree(options.output+'/'+model+'/snfit_data/Instruments/Keplercam')
             shutil.copytree(JLA.get_full_path(params['CfA_instrument']),options.output+'/'+model+'/snfit_data/Instruments/Keplercam')
 
@@ -174,6 +175,7 @@ def create_Models(options):
             pass
 
         shutil.copytree(JLA.get_full_path(model['baseInstrument']+model['fitmodel']),options.output+'/'+model['modelNumber']+'/snfit_data/'+model['fitmodel'])
+        print JLA.get_full_path(model['baseInstrument']+model['fitmodel']),options.output+'/'+model['modelNumber']+'/snfit_data/'+model['fitmodel']
 
         # Remove the old MagSys directory and replace it with the new one
         shutil.rmtree(options.output+'/'+model['modelNumber']+'/snfit_data/MagSys')
@@ -188,18 +190,23 @@ def create_Models(options):
         else:
             offsetZP(options.output+'/'+model['modelNumber']+'/snfit_data/MagSys/'+model['MagSys'],model['ShortName'],model['Instrument'],model['fitmodel'])
 
+
         # We now update the list of instruments in the newly created surfaces
-        # We should try to generalise this, as this will become very complex as more instruments are added.
+        # This code is not clear
         if model['Instrument']=='DECAM':
             # Update just the Keplercam instrument files
+            # There is no need to update Swope2, as the new filters are in the base model
             updateKeplercam(options,params,model)
         elif model['Instrument']=='KEPLERCAM':
             # Update just the DES instrument files
+            # There is no need to update Swope2, as the new filters are in the base model
             updateDES(options,params,model)
         else: # The case for swope ...
             # Update both the Keplercam and DES fles
             updateDES(options,params,model)
             updateKeplercam(options,params,model)
+
+
 
 
         modelList.append(model['modelNumber'])

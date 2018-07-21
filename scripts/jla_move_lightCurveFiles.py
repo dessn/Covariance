@@ -36,6 +36,27 @@ def modify(dst):
 
     return
 
+def modify_CfA4(dst):
+    f=open(dst)
+    lines=f.readlines()
+    f.close()
+
+    # We overwrite the file
+    # You may want to do more checks than you do"
+    f=open(dst,"w")
+    for line in lines:
+        if 'KEPLERCAM::V' in line:
+            f.write(line.replace("::V","::Vc"))
+        elif 'KEPLERCAM::r' in line:
+            f.write(line.replace("::r","::rc"))
+        elif 'KEPLERCAM::i' in line:
+            f.write(line.replace("::i","::ic"))
+        else: 
+            f.write(line)
+    f.close()
+
+    return
+
 
 surveys=OrderedDict()
 
@@ -43,11 +64,10 @@ surveys['CSP+CfA']={'input':'nearby/CfA-CSP_overlap/concat','output':'CfA-CSP_ov
 surveys['CSP']={'input':'nearby/CSP/DS17','output':'CSP'}
 surveys['CfA3']={'input':'nearby/CfA3/DS17','output':'CfA3'}
 surveys['CfA4']={'input':'nearby/CfA4/DS17','output':'CfA4'}
-surveys['DES3yr']={'input':'DES_3yr_spec/SMPv3','output':'DES'}
+surveys['DES3yr']={'input':'DES3YR/SMPv5','output':'DES'}
 
 params=JLA.build_dictionary(options.config)
 
-#SN_list=['sn2009hp'] Why did we want to skip this SNe?
 SN_list=[]
 
 file=open(options.output,'w')
@@ -75,6 +95,27 @@ for survey in surveys.keys():
     except:
         pass
 
+    p2=['sn2009hp',
+        'sn2009ig',
+        'sn2009jr',
+        'sn2009kk',
+        'sn2009kq',
+        'sn2009le',
+        'sn2009lf',
+        'sn2009li',
+        'sn2009na',
+        'sn2009nq',
+        'sn2010A',
+        'sn2010H',
+        'sn2010Y',
+        'sn2010ag',
+        'sn2010ai',
+        'sn2010cr',
+        'sn2010dt',
+        'sn2010dw',
+        'snPTF10bjs']
+
+
     # Copy the light curves accross and update the list of SNe
     for lightCurve in os.listdir(JLA.get_full_path(params['lightCurvesOrig'])+surveys[survey]['input']):
         if 'list' in lightCurve:
@@ -90,5 +131,8 @@ for survey in surveys.keys():
             # For DES SN, modify the magsys from AB to DES-AB
             if survey=="DES":
                 modify(dst)
+            # For CfA4 SNe, modify the the filter names if the SN was affected by the pre-bakeout 
+            if survey=="CfA4" and SN in p2:
+                modify_CfA4(dst)
 
 file.close()

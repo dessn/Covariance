@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser = OptionParser()
 
     parser.add_option("-c", "--config", dest="config", default=None,
-                      help="Parameter file containing the location of various JLA parameters")
+                      help="Parameter file containing the location of various files")
 
     (options, args) = parser.parse_args()
 
@@ -113,6 +113,40 @@ if __name__ == '__main__':
     # Read in the lightcurve fit parameters
     lcfits = JLA.get_full_path(params['lightCurveFits'])
     data_all = Table.read(lcfits)
+
+    # Read in the list of SNe that are used in the BBC analysis
+    include=np.genfromtxt(JLA.get_full_path(params['include']), comments='#', \
+        usecols=(0), dtype=[('name','a20')])
+    
+    # Read in the order in which the SNe appear in the files
+    ordering=np.genfromtxt(JLA.get_full_path(params['order']), comments='#', \
+        usecols=(0), dtype=[('name','a30')])
+
+    
+    nSNe=len(ordering)
+    tempList=[]
+    
+    keep = np.zeros(nSNe,bool)
+    # Modify the input, so that only the SNe that pass cuts are used ...
+    for i,SN in enumerate(ordering['name']):
+        if SN.replace('lc-','').replace('.list','') in include['name']:
+            keep[i]=True
+            tempList.append(SN.replace('lc-','').replace('.list',''))
+
+    # The light curve fits file has 561 SNe, so we do that one separately
+    # This will need to be updated by Tamara. We can then remove this code
+    # Some of the SN are in the BB list file (needs to be updated) 
+    keepfits=np.zeros(len(data_all),bool)
+    # Modify the input, so that only the SNe that pass cuts are used ...
+    for i,SN in enumerate(data_all['name']):
+        if SN in include['name'] and SN in tempList:
+            keepfits[i]=True
+
+
+    print keep.sum(),keepfits.sum()
+
+    data_all=data_all[keepfits]
+    exit()
 
     # Determine the survey from the target name
     data_all['sample']=get_sample(data_all['name'])

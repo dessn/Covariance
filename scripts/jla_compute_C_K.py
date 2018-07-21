@@ -24,7 +24,7 @@ def compute_C_K(options):
 
     # -----------  We read in the JLA version of C_Kappa ------------
 
-    nDim = 46  # The number of elements in the DES C_Kappa matrix
+    nDim = 52  # The number of elements in the DES C_Kappa matrix
     C_K_DES = numpy.zeros(nDim * nDim).reshape(nDim, nDim)
 
     SMP_ZP = 0.001                                 # The accuracy of the SMP ZPs
@@ -42,9 +42,9 @@ def compute_C_K(options):
         # and uncertainties in the filter curves second
         # The order is specified in salt2_calib_variations_all/saltModels.list
         # CfA3 and CfA4 are in rows 10 to 19 and 46 to 56 (starting at row 1) 
-        # We write these to rows 1 to 10 and 24 to 33
+        # We write these to rows 1 to 10 and 27 to 36
         # CSP are in rows 20 to 25 and 57 to 62.
-        # We write these to rows 11 to 16 and 34 to 39
+        # We write these to rows 11 to 16 and 37 to 42
         
         C_K_JLA = fits.getdata(JLA.get_full_path(params['C_kappa_JLA']))
 
@@ -55,7 +55,7 @@ def compute_C_K(options):
         C_K_DES[0:16, 0:16] = C_K_JLA[9:25,9:25]
 
         # Filter curves second
-        C_K_DES[23:39, 23:39] = C_K_JLA[9+size/2:25+size/2,9+size/2:25+size/2]
+        C_K_DES[27:42, 27:42] = C_K_JLA[9+size/2:25+size/2,9+size/2:25+size/2]
 
         # Cross terms. Not needed, as they are zero
         # C_K_DES[0:16, 23:39] = C_K_JLA[9:25,9+size/2:25+size/2]
