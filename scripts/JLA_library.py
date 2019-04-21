@@ -122,7 +122,7 @@ class components:
             if record.strip()!='':
                 entries=record.split()
                 if entries[0]=='BSplineAdaptedBasis':
-                    print 'There are %d entries' % len(entries)
+                    print('There are %d entries' % len(entries))
                     self.basis.append(entries[0])
                     self.nPhases.append(int(entries[1]))
                     self.nWaveBins.append(int(entries[2]))
@@ -322,7 +322,7 @@ def getCovMatfile(inputFile):
     return None
 
 def getDateOfMax(inputFile):
-    print inputFile
+    print(inputFile)
     f=open(inputFile)
     lines=f.readlines()
     f.close()
@@ -367,10 +367,10 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False, params={}):
 
     if dayMax and not force:
         cmd='cp %s %s' % (inputFile,outputFile)
-        print 'Copying the lightcurve for %s' % SNname 
+        print('Copying the lightcurve for %s' % SNname)
         sp.call(cmd,shell=True)
     else:
-        print 'Fitting and adjusting %s' % SNname 
+        print('Fitting and adjusting %s' % SNname)
         outputFile1=SNname+'.dat3'
         fitLC(inputFile, outputFile1, salt_prefix='', forceDayMax=False, salt_path=get_full_path(params['defsaltModel']))
         date,error=getDateOfMax(outputFile1)
@@ -392,7 +392,7 @@ def insertDateOfMax(SN, inputFile, outputFile, force=False, params={}):
         inputFile2=os.path.split(inputFile)[0]+'/'+covMat
         outputFile2=os.path.split(outputFile)[0]+'/'+covMat
         cmd='cp %s %s' % (inputFile2,outputFile2)
-        print 'Copying the covariance matrix for %s' % SN 
+        print('Copying the covariance matrix for %s' % SN)
         sp.call(cmd,shell=True)
 
     os.chdir(cwd)
@@ -406,7 +406,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_path=''):
     # Write the result and the covariance matrix to the area you want to work in
     if salt_path!='':
         os.environ['SALTPATH']=salt_path
-    print os.environ['SALTPATH']
+    print(os.environ['SALTPATH'])
 
     salt_prefix=''
 
@@ -429,7 +429,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_path=''):
         try:
             sp.call(cmd2,shell=True)
         except:
-            print 'No covariance matrix'
+            print('No covariance matrix')
 
 
     # Run snfit twice, once with the correct value of E(B-V) and again with the adjusted value
@@ -438,7 +438,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_path=''):
     inputFile1=os.path.split(inputFile)[1]
     outputFile1=SN+'.fit'
     if os.path.isfile(outputFile1):
-        print 'Skipping %s, output file %s already exists' % (SN,outputFile1)
+        print('Skipping %s, output file %s already exists' % (SN,outputFile1))
     else:
         fitLC(inputFile1, outputFile1, salt_prefix, True, salt_path)
 
@@ -449,7 +449,7 @@ def compute_extinction_offset(SN, inputFile, offset, workArea, salt_path=''):
     sp.call(cmd,shell=True)
 
     if os.path.isfile(outputFile2):
-        print 'Skipping %s, output file %s already exists' % (SN,outputFile2)
+        print('Skipping %s, output file %s already exists' % (SN,outputFile2))
     else:
         fitLC(inputFile2, outputFile2, salt_prefix, True, salt_path)
 

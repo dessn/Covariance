@@ -11,7 +11,6 @@ wave_B=4302.57
 wave_V=5428.55
 
 def reduced_lambda(x):
-    # What is this ???
     return (x-wave_B) / (wave_V - wave_B)
 
 def CCM(wave,R_V=3.1):
@@ -82,7 +81,8 @@ def compareSALTsurfaces(surface):
     # -----------  Read in the SALT models -------------------
 
     surface1=readSALTsurface(JLA.get_full_path(params['model1'])+'salt2-4/')
-    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
+#    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
+    surface2=readSALTsurface(JLA.get_full_path(params['model2']))
     
 
     # -----------  Plot the surfaces ----------------------
@@ -90,70 +90,99 @@ def compareSALTsurfaces(surface):
     for axes,x1 in enumerate([-2,0,2]):
         ax=fig1.add_subplot(3,1,axes+1)
         flux1=surface1.template_0[options.phase]['flux'] + x1 * surface1.template_1[options.phase]['flux']
-        flux2=surface2.template_0[options.phase]['flux'] + x1 * surface1.template_1[options.phase]['flux']
+        flux2=surface2.template_0[options.phase]['flux'] + x1 * surface2.template_1[options.phase]['flux']
         ax.plot(surface1.template_0[options.phase]['wave'],flux1)
         ax.plot(surface2.template_0[options.phase]['wave'],flux2)
+        ax.text(7000,0.3,"C=0 x1=%2d" % x1)
 
+    ax.set_xlabel("wavelength ($\AA$)")
+        
+    plt.savefig(options.config.replace(".config","_SED.png"))
+
+       
     # -----------  Plot the colour laws ----------------------
 
-    fig2=plt.figure()
-    ax2=fig2.add_subplot(111)
-    wave=numpy.arange(2800.,7000.,10.)
+    fig3=plt.figure()
+    ax3=fig3.add_subplot(111)
+    wave=surface1.template_0[options.phase]['wave']  
     wave_min=2800.
     wave_max=7000.
     
     #wave_min_reduced=reduced_lambda(wave_min)
     #wave_max_reduced=reduced_lambda(wave_max)
 
-    # See saltextinction.h
+    # See salt2extinction.h
     reduced_wave=reduced_lambda(wave)
     reduced_wave_B=reduced_lambda(wave_B)
+
     # Note that reduced_wave_B=0
 
-    alpha=1.0
-    # It's not quite correct
-    C=-0.1#??
+    alpha1=1.0
+    
+    # Need to check the sign.
+    C=-0.1
 
+    # There are 4 co-efficients in the colour law
     for coeff in surface1.colour_law['coeff']:
-        alpha-=coeff
+        alpha1-=coeff
 
-    p=alpha * reduced_wave
+    p1=alpha1 * reduced_wave
     for exponent,coeff in enumerate(surface1.colour_law['coeff']):
-        p+=coeff*reduced_wave**(exponent+2)
+        p1+=coeff*reduced_wave**(exponent+2)
 
-    A_wave=p*C
-    ax2.plot(wave, A_wave,label='model1')
+    A1_wave=p1*C
+    ax3.plot(wave, A1_wave,label='model1')
 
-    alpha=1.0
+    alpha2=1.0
     for coeff in surface2.colour_law['coeff']:
-        alpha-=coeff
-    p=alpha * reduced_wave
+        alpha2-=coeff
+        
+    p2=alpha2 * reduced_wave
     for exponent,coeff in enumerate(surface2.colour_law['coeff']):
-        p+=coeff*reduced_wave**(exponent+2)
+        p2+=coeff*reduced_wave**(exponent+2)
 
-    A_wave=p*C
-    ax2.plot(wave, A_wave, label='model2')
+    A2_wave=p2*C
+    ax3.plot(wave, A2_wave, label='model2')
 
     # Plot CCM R_V=3.1
     E_BV=0.1
     R_V=3.1
     a_wave=E_BV * R_V * CCM(wave, R_V)
     a_B=E_BV * R_V * CCM(numpy.array([wave_B]),R_V)
-    ax2.plot(wave,a_wave-a_B,label='CCM R_V=3.1')
+    ax3.plot(wave,a_wave-a_B,label='CCM R_V=3.1')
 
     #CCM R_V=1.0
     R_V=1.0
     a_wave=E_BV * R_V * CCM(wave, R_V)
     a_B=E_BV * R_V * CCM(numpy.array([wave_B]),R_V)
-    ax2.plot(wave,a_wave-a_B,label='CCM R_V=1.0')
+    ax3.plot(wave,a_wave-a_B,label='CCM R_V=1.0')
 
     # F99 R_V=3.1
     a_wave=E_BV * R_V * Fitz99(wave)
     a_B=E_BV * R_V * Fitz99(numpy.array([wave_B]))
-    ax2.plot(wave,a_wave-a_B,label='F99 R_V=3.1')
+    ax3.plot(wave,a_wave-a_B,label='F99 R_V=3.1')
     
-    ax2.legend()
-    plt.savefig(options.config.replace(".config",".png"))
+    ax3.legend()
+    ax3.set_xlabel("wavelength ($\AA$)")
+    ax3.set_xlim(wave_min,wave_max)
+    ax3.set_ylim(-0.3,0.8)
+    plt.savefig(options.config.replace(".config","_colourlaw.png"))
+
+    # -----------  Plot examples of the impact of colour ----------------------
+    # Assume x1=0
+    
+    fig2=plt.figure()
+    for axes,C in enumerate([-0.1,0,0.1]):
+        ax2=fig2.add_subplot(3,1,axes+1)
+        flux1=surface1.template_0[options.phase]['flux'] * numpy.exp(C*p1)
+        flux2=surface2.template_0[options.phase]['flux'] * numpy.exp(C*p2)
+        ax2.plot(surface1.template_0[options.phase]['wave'],flux1)
+        ax2.plot(surface2.template_0[options.phase]['wave'],flux2)
+        ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
+
+    ax2.set_xlabel("wavelength ($\AA$)")
+    plt.savefig(options.config.replace(".config","_colour_SED.png"))
+
     plt.show()
     plt.close()
     
