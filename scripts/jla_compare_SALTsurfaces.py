@@ -70,6 +70,19 @@ class readSALTsurface:
         return
 
 
+def derivative(alpha,surface,reduced_wave):
+    d=alpha
+    for exponent,coeff in enumerate(surface.colour_law['coeff']):
+        d+=(exponent+2)*coeff*reduced_wave**(exponent+1)
+    return d
+    
+def colourLaw(alpha,surface,reduced_wave):
+    d=alpha*reduced_wave
+    for exponent,coeff in enumerate(surface.colour_law['coeff']):
+        d+=coeff*reduced_wave**(exponent+2)
+    return d
+
+
 def compareSALTsurfaces(surface):
 
     import matplotlib.pyplot as plt
@@ -102,45 +115,95 @@ def compareSALTsurfaces(surface):
        
     # -----------  Plot the colour laws ----------------------
 
+    # See salt2extinction.cc
+    # Note the extrapolation
+
+#    /*
+#    ========================================================
+#    VERSION 1
+#    ========================================================
+#    if(l_B<=l<=l_R)
+#    ext = exp( color * constant * ( alpha*l + params(0)*l^2 + params(1)*l^3 + ... ))
+#    = exp( color * constant * P(l) )
+#    alpha = 1-params(0)-params(1)-...
+#    if(l>l_R)
+#    ext = exp( color * constant * ( P(l_R) + P'(l_R)*(l-l_R) ) )
+#    if(l<l_B)
+#    ext = exp( color * constant * ( P(l_B) + P'(l_B)*(l-l_B) ) )
+#  
+#    ======================================================== 
+#    */
+
+    constant=0.4 * numpy.log(10)
     fig3=plt.figure()
     ax3=fig3.add_subplot(111)
-    wave=surface1.template_0[options.phase]['wave']  
+    wave=surface1.template_0[options.phase]['wave']
     wave_min=2800.
     wave_max=7000.
     
-    #wave_min_reduced=reduced_lambda(wave_min)
-    #wave_max_reduced=reduced_lambda(wave_max)
-
+    wave_min_reduced=reduced_lambda(wave_min)
+    wave_max_reduced=reduced_lambda(wave_max)
+    
     # See salt2extinction.h
     reduced_wave=reduced_lambda(wave)
-    reduced_wave_B=reduced_lambda(wave_B)
 
-    # Note that reduced_wave_B=0
-
+    # Model 1
     alpha1=1.0
     
-    # Need to check the sign.
-    C=-0.1
-
     # There are 4 co-efficients in the colour law
     for coeff in surface1.colour_law['coeff']:
         alpha1-=coeff
 
-    p1=alpha1 * reduced_wave
-    for exponent,coeff in enumerate(surface1.colour_law['coeff']):
-        p1+=coeff*reduced_wave**(exponent+2)
+    p1=numpy.zeros(len(reduced_wave))
+        
+    # Compute derivatives for extrapolations
+    p1_derivative_min=derivative(alpha1,surface1,wave_min_reduced)
+    p1_derivative_max=derivative(alpha1,surface1,wave_max_reduced)
+
+    # Compute colour law at the points of extrapolations
+    p1_wave_min_reduced=colourLaw(alpha1,surface1,wave_min_reduced)
+    p1_wave_max_reduced=colourLaw(alpha1,surface1,wave_max_reduced)
+
+    for index,rl in enumerate(reduced_wave):
+        if rl < wave_min_reduced:
+            p1[index]=p1_wave_min_reduced+p1_derivative_min*(rl-wave_min_reduced)
+        elif rl > wave_max_reduced:
+            p1[index]=p1_wave_max_reduced+p1_derivative_max*(rl-wave_max_reduced)
+        else:
+            p1[index]=colourLaw(alpha1,surface1,rl)
+    
+    # Model 2
+    alpha2=1.0
+
+    for coeff in surface2.colour_law['coeff']:
+        alpha2-=coeff
+
+    p2=numpy.zeros(len(reduced_wave))
+            
+    # Compute derivatives for extrapolations
+    p2_derivative_min=derivative(alpha2,surface2,wave_min_reduced)
+    p2_derivative_max=derivative(alpha2,surface2,wave_max_reduced)
+
+    # Compute colour law at the points of extrapolations
+    p2_wave_min_reduced=colourLaw(alpha2,surface2,wave_min_reduced)
+    p2_wave_max_reduced=colourLaw(alpha2,surface2,wave_max_reduced)
+
+    for index,rl in enumerate(reduced_wave):
+        if rl < wave_min_reduced:
+            p2[index]=p2_wave_min_reduced+p2_derivative_min*(rl-wave_min_reduced)
+        elif rl > wave_max_reduced:
+            p2[index]=p2_wave_max_reduced+p2_derivative_max*(rl-wave_max_reduced)
+        else:
+            p2[index]=colourLaw(alpha2,surface2,rl)
+    
+    # See Fig.3 of B14.
+    # p1 and p2 are the log (colour law)
+    
+    C=-0.1
 
     A1_wave=p1*C
     ax3.plot(wave, A1_wave,label='model1')
-
-    alpha2=1.0
-    for coeff in surface2.colour_law['coeff']:
-        alpha2-=coeff
-        
-    p2=alpha2 * reduced_wave
-    for exponent,coeff in enumerate(surface2.colour_law['coeff']):
-        p2+=coeff*reduced_wave**(exponent+2)
-
+    
     A2_wave=p2*C
     ax3.plot(wave, A2_wave, label='model2')
 
@@ -164,18 +227,21 @@ def compareSALTsurfaces(surface):
     
     ax3.legend()
     ax3.set_xlabel("wavelength ($\AA$)")
-    ax3.set_xlim(wave_min,wave_max)
     ax3.set_ylim(-0.3,0.8)
     plt.savefig(options.config.replace(".config","_colourlaw.png"))
 
     # -----------  Plot examples of the impact of colour ----------------------
     # Assume x1=0
-    
+    # Note
+    # The colour laws p1 and p2 have the absorption in the B band subtracted
+    # The units are magnitudes
+    # Are we correctly applyng the colour law?
+
     fig2=plt.figure()
     for axes,C in enumerate([-0.1,0,0.1]):
         ax2=fig2.add_subplot(3,1,axes+1)
-        flux1=surface1.template_0[options.phase]['flux'] * numpy.exp(C*p1)
-        flux2=surface2.template_0[options.phase]['flux'] * numpy.exp(C*p2)
+        flux1=surface1.template_0[options.phase]['flux'] * numpy.exp(C*constant*p1)
+        flux2=surface2.template_0[options.phase]['flux'] * numpy.exp(C*constant*p2)
         ax2.plot(surface1.template_0[options.phase]['wave'],flux1)
         ax2.plot(surface2.template_0[options.phase]['wave'],flux2)
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
