@@ -32,14 +32,52 @@ def CCM(wave,R_V=3.1):
         val.append(a + b / R_V)
     return numpy.array(val)
 
-def Fitz99(wave):
+#def Fitz99(wave):
     # For R_V=3.1
     # See http://iopscience.iop.org/article/10.1086/316293/pdf
+#    from scipy.interpolate import CubicSpline
+#    knots=numpy.array([26500, 12200, 6000, 5470, 4670, 4110, 2700, 2600])
+#    values=numpy.array([0.265, 0.829, 2.688, 3.055, 3.806, 4.315, 6.265, 6.591])
+#    cs = CubicSpline(knots[::-1], values[::-1])       
+#    return cs(wave)
+
+def Fitz99_Spline(wave,R_V):
+    # See http://iopscience.iop.org/article/10.1086/316293/pdf
+    # for lambda > 2700 Angstroms
     from scipy.interpolate import CubicSpline
-    knots=numpy.array([26500, 12200, 6000, 5470, 4670, 4110, 2700, 2600])
-    values=numpy.array([0.265, 0.829, 2.688, 3.055, 3.806, 4.315, 6.265, 6.591])
-    cs = CubicSpline(knots[::-1], values[::-1])       
+    knots=numpy.array([26500., 12200., 6000., 5470., 4670., 4110., 2700., 2600.])
+    # Ojo!
+    # There is a sign error in the last row of Table 4
+    values=numpy.array([0.265, 0.829, -0.426+1.0044*R_V, -0.050+1.0016*R_V, 0.701+1.0016*R_V, 1.208+1.0032*R_V-0.00033*R_V**2, 6.265, 6.591])
+    # R_V=3.1
+    #values=numpy.array([0.265, 0.829, 2.688, 3.055, 3.806, 4.315, 6.265, 6.591])
+    cs = CubicSpline(knots[::-1], values[::-1])
     return cs(wave)
+
+
+def Fitz99(wave,R_V=3.1):
+    # See http://iopscience.iop.org/article/10.1086/316293/pdf
+    # and earlier references
+    x0=4.596
+    gam=0.99
+    c2=-0.824+4.717/R_V
+    c1=2.030-3.007*c2
+    c3=3.23
+    c4=0.41
+    val=[]
+          
+    for w in wave:
+        x=10000./w
+        D=x**2 / ((x**2-x0**2)**2+gam**2*x**2)
+        if x > 5.9:
+            F=0.5392*(x-5.9)**2 + 0.0564*(x-5.9)**3
+        else:
+            F=0.0
+        val.append(c1+c2*x+c3*D+c4*F)
+    
+    
+    return numpy.array(val)
+
 
 class readSALTsurface:
     """A SALT surface"""
@@ -94,9 +132,8 @@ def compareSALTsurfaces(surface):
     # -----------  Read in the SALT models -------------------
 
     surface1=readSALTsurface(JLA.get_full_path(params['model1'])+'salt2-4/')
-#    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
-    surface2=readSALTsurface(JLA.get_full_path(params['model2']))
-    
+    #    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
+    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
 
     # -----------  Plot the surfaces ----------------------
     fig1=plt.figure()
@@ -221,9 +258,18 @@ def compareSALTsurfaces(surface):
     ax3.plot(wave,a_wave-a_B,label='CCM R_V=1.0')
 
     # F99 R_V=3.1
-    a_wave=E_BV * R_V * Fitz99(wave)
-    a_B=E_BV * R_V * Fitz99(numpy.array([wave_B]))
-    ax3.plot(wave,a_wave-a_B,label='F99 R_V=3.1')
+    
+    # Fitz99 UV extiction - note the limited wavelength range
+    # https://iopscience.iop.org/article/10.1086/316293/pdf
+    # http://adsabs.harvard.edu/abs/1990ApJS...72..163FE_BV=0.1
+    R_V=3.1
+    wave=numpy.arange(2000,2700,1.0)
+    ax3.plot(wave, E_BV*(Fitz99(wave,R_V)-1.0),label="Fitz99 UV R_V=%3.1f" % R_V)
+    # Fitz99 - Spline function in the optical
+    # https://iopscience.iop.org/article/10.1086/316293/pdf
+    wave=numpy.arange(2700,9200,1.0)
+    a_B=E_BV*(Fitz99_Spline(numpy.array([wave_B]),R_V))
+    ax3.plot(wave,E_BV*Fitz99_Spline(wave,R_V)-a_B,label="Fitz99 Spline R_V=%3.1f" % R_V)
     
     ax3.legend()
     ax3.set_xlabel("wavelength ($\AA$)")
