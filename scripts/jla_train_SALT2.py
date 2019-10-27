@@ -1,3 +1,4 @@
+
 """Python program to compute the C_cal matrices
 """
 
@@ -239,15 +240,17 @@ def train_SALT2(options):
     # 
     # Uses the followng output from step 7
     # lcresiduals.list
+    #
+    # Produces seceral files, the most important of which is cle_final.list which is copied to salt2_color_dispersion.dat
     
     cmd=['post_color_law_fit',
          'lcresiduals.list', 
          'salt2_color_correction.dat',
          '-n',
-         '-3']
+         '3']
 
-    ##sp.call(' '.join(cmd),shell=True)
-    # This command fails
+
+    sp.call(' '.join(cmd),shell=True)
 
     
     # Create the new surface
@@ -259,7 +262,6 @@ def train_SALT2(options):
 
     os.mkdir(outputDir+'salt2-4')
 
-
     
     # We seem to be missing the file salt2_color_dispersion.dat
 
@@ -267,7 +269,7 @@ def train_SALT2(options):
     inputFiles=['salt2_color_correction.dat',
                 'salt2_lc_relative_variance_0.dat',
                 'salt2_spec_variance_1.dat',
-#                'salt2_color_dispersion.dat',
+                'cle_final.list',
                 'salt2_lc_relative_variance_1.dat',
                 'salt2_template_0.dat',
                 'salt2_lc_dispersion_scaling.dat',
@@ -279,7 +281,7 @@ def train_SALT2(options):
     outputFiles=['salt2_color_correction.dat',
                 'salt2_lc_relative_variance_0.dat',
                 'salt2_spec_variance_1.dat',
-#                'salt2_color_dispersion.dat',
+                'salt2_color_dispersion.dat',
                 'salt2_lc_relative_variance_1.dat',
                 'salt2_template_0.dat',
                 'salt2_lc_dispersion_scaling.dat',
