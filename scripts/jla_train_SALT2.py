@@ -44,7 +44,7 @@ def train_SALT2(options):
     # Set the SALTPATH
     
     os.environ['SALTPATH']=params['inputSurface']
-    print(os.environ['SALTPATH'])
+    print('SALT PATH is %s' %os.environ['SALTPATH'])
     
     # Part a) First training, withiout error snake
 
@@ -62,11 +62,10 @@ def train_SALT2(options):
     # Training list defined provided in trainingsample_snls_sdss_v5.list
 
     cmd=['pcafit',
-         '-l','trainingsample_snls_sdss_v5.list',
+         '-l',params['trainingList'],
          '-c','training_without_error_snake.conf',
          '-p','pca_1_opt1_final.list',
          '-d']
-
 
     # Will produce a SALT2 surface, inlcuding
     # salt2_color_correction.dat - CL(lambda)
@@ -126,7 +125,7 @@ def train_SALT2(options):
     #   covmat_1_with_constraints.fits is a 5956 x 5956 matrix
     
     cmd=['compute_error_snake',
-         'trainingsample_snls_sdss_v5.list', 
+         params['trainingList'],
          'training_without_error_snake.conf', 
          'pca_1_opt1_final.list',
          'full_weight_1.fits',
@@ -161,7 +160,7 @@ def train_SALT2(options):
 
     
     cmd=['pcafit',
-         '-l','trainingsample_snls_sdss_v5.list',
+         '-l',params['trainingList'],
          '-c','training_with_error_snake.conf',
          '-p','pca_1_opt1_final_first.list',
          '-d']
@@ -202,7 +201,7 @@ def train_SALT2(options):
     #   covmat_1_with_constraints.fits
 
     cmd=['compute_error_snake',
-         'trainingsample_snls_sdss_v5.list', 
+         params['trainingList'],
          'training_with_error_snake.conf', 
          'pca_1_opt1_final.list',
          'full_weight_1.fits',
@@ -221,7 +220,7 @@ def train_SALT2(options):
     #
     
     cmd=['lightcurve_residuals',
-         'trainingsample_snls_sdss_v5.list', 
+         params['trainingList'],
          'training_with_error_snake.conf', 
          'pca_1_opt1_final.list',
          'full_weight_1.fits',
@@ -249,9 +248,7 @@ def train_SALT2(options):
          '-n',
          '3']
 
-
     sp.call(' '.join(cmd),shell=True)
-
     
     # Create the new surface
     for directory in ['Instruments','MagSys']:        

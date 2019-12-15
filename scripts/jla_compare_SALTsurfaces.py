@@ -93,6 +93,15 @@ class readSALTsurface:
         self.colour_law=numpy.genfromtxt(f+'/salt2_color_correction.dat',dtype=[('coeff',float)],
                                     skip_header=1,skip_footer=3)
         
+
+        self.colour_law_error=numpy.genfromtxt(f+'/salt2_color_dispersion.dat',dtype=[('wave',float),
+                                                                                ('sig',float)], 
+                                         skip_header=3)
+        
+
+        
+
+
         self.template_0={}
         self.template_1={}
         self.colourlaw=[]
@@ -239,7 +248,11 @@ def compareSALTsurfaces(surface):
     C=-0.1
 
     A1_wave=p1*C
+    A1_wave_err_plus=(p1+surface1.colour_law_error['sig'])*C
+    A1_wave_err_minus=(p1-surface1.colour_law_error['sig'])*C
+    ax3.fill_between(wave, A1_wave_err_plus,A1_wave_err_minus,alpha=0.4,label='model1+err')
     ax3.plot(wave, A1_wave,label='model1')
+    
     
     A2_wave=p2*C
     ax3.plot(wave, A2_wave, label='model2')
