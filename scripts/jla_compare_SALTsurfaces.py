@@ -147,14 +147,20 @@ def compareSALTsurfaces(surface):
     # -----------  Plot the surfaces ----------------------
     fig1=plt.figure()
     for axes,x1 in enumerate([-2,0,2]):
-        ax=fig1.add_subplot(3,1,axes+1)
+        ax1=fig1.add_subplot(3,1,axes+1)
         flux1=surface1.template_0[options.phase]['flux'] + x1 * surface1.template_1[options.phase]['flux']
         flux2=surface2.template_0[options.phase]['flux'] + x1 * surface2.template_1[options.phase]['flux']
-        ax.plot(surface1.template_0[options.phase]['wave'],flux1)
-        ax.plot(surface2.template_0[options.phase]['wave'],flux2)
-        ax.text(7000,0.3,"C=0 x1=%2d" % x1)
-
-    ax.set_xlabel("wavelength ($\AA$)")
+        ax1.plot(surface1.template_0[options.phase]['wave'],flux1,color='b')
+        ax1.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
+        ax1.text(7000,0.3,"C=0 x1=%2d" % x1)
+        ax1b = ax1.twinx()
+        ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        ax1b.set_ylim(-20,20)
+        ax1b.tick_params(axis='y', labelcolor='r')
+        
+    ax1.set_xlabel("wavelength ($\AA$)")
+    ax1.set_ylabel("flux density")
+    ax1b.set_ylabel('% Differece', color='r')
         
     plt.savefig(options.config.replace(".config","_SED.png"))
 
@@ -301,11 +307,18 @@ def compareSALTsurfaces(surface):
         ax2=fig2.add_subplot(3,1,axes+1)
         flux1=surface1.template_0[options.phase]['flux'] * numpy.exp(C*constant*p1)
         flux2=surface2.template_0[options.phase]['flux'] * numpy.exp(C*constant*p2)
-        ax2.plot(surface1.template_0[options.phase]['wave'],flux1)
-        ax2.plot(surface2.template_0[options.phase]['wave'],flux2)
+        ax2.plot(surface1.template_0[options.phase]['wave'],flux1,color='b')
+        ax2.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
+        ax2b = ax2.twinx()
+        ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        ax2b.set_ylim(-20,20)
+        ax2b.tick_params(axis='y', labelcolor='r')
 
     ax2.set_xlabel("wavelength ($\AA$)")
+    ax2.set_ylabel("flux density")
+    ax2b.set_ylabel('% Differece', color='r')
+
     plt.savefig(options.config.replace(".config","_colour_SED.png"))
 
     plt.show()
