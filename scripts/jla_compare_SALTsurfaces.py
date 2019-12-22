@@ -102,6 +102,7 @@ class readSALTsurface:
         
 
 
+        self.surfaceName=f
         self.template_0={}
         self.template_1={}
         self.colourlaw=[]
@@ -141,8 +142,9 @@ def compareSALTsurfaces(surface):
     # -----------  Read in the SALT models -------------------
 
     surface1=readSALTsurface(JLA.get_full_path(params['model1'])+'salt2-4/')
-    #    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
     surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
+
+    name="%s-%s" % (surface1.surfaceName.split('/')[-3],surface2.surfaceName.split('/')[-3])
 
     # -----------  Plot the surfaces ----------------------
     fig1=plt.figure()
@@ -155,14 +157,15 @@ def compareSALTsurfaces(surface):
         ax1.text(7000,0.3,"C=0 x1=%2d" % x1)
         ax1b = ax1.twinx()
         ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        ax1b.plot([2000,9200],[0,0],'m--',marker=None)
         ax1b.set_ylim(-20,20)
         ax1b.tick_params(axis='y', labelcolor='r')
         
     ax1.set_xlabel("wavelength ($\AA$)")
     ax1.set_ylabel("flux density")
-    ax1b.set_ylabel('% Differece', color='r')
+    ax1b.set_ylabel('% Difference', color='r')
         
-    plt.savefig(options.config.replace(".config","_SED.png"))
+    plt.savefig("%s_SED.png" % (name))
 
        
     # -----------  Plot the colour laws ----------------------
@@ -293,7 +296,7 @@ def compareSALTsurfaces(surface):
     ax3.legend()
     ax3.set_xlabel("wavelength ($\AA$)")
     ax3.set_ylim(-0.3,0.8)
-    plt.savefig(options.config.replace(".config","_colourlaw.png"))
+    plt.savefig("%s_colourlaw.png" % (name))
 
     # -----------  Plot examples of the impact of colour ----------------------
     # Assume x1=0
@@ -311,15 +314,16 @@ def compareSALTsurfaces(surface):
         ax2.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
         ax2b = ax2.twinx()
+        ax2b.plot([2000,9200],[0,0],'m--',marker=None)
         ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
         ax2b.set_ylim(-20,20)
         ax2b.tick_params(axis='y', labelcolor='r')
 
     ax2.set_xlabel("wavelength ($\AA$)")
     ax2.set_ylabel("flux density")
-    ax2b.set_ylabel('% Differece', color='r')
+    ax2b.set_ylabel('% Difference', color='r')
 
-    plt.savefig(options.config.replace(".config","_colour_SED.png"))
+    plt.savefig("%s_colour_SED.png" % (name))
 
     plt.show()
     plt.close()
