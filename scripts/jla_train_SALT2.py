@@ -27,23 +27,28 @@ def train_SALT2(options):
     # Read in the configuration file
     params=JLA.build_dictionary(options.config)
     
-    # Make the initialisation and training directories
+    # Create the directory where the training will be done
     mkdir(params['trainingDir'])
 
     # Copy accross files from the initDir to the trainingDir
+    # Consists of
+    # i) Starting point for the mininimisation routine - pca_1_opt1_final.list
+    # ii) Configuration files for pcafit - with and without error snake
     for file in os.listdir(params['initDir']):
         sh.copy(params['initDir']+'/'+file,params['trainingDir'])
 
     # Make the output directory
+    # This is where we store the output surface.
+    # It's name consists of the training sample used and the version of snpca used to do the training
     date=date=JLA.get_date()
     outputDir="/%s/data_%s_%s_%s/" % (params['outputDir'],date,params['trainingSample'],params['snpcaVersion'])
     mkdir(outputDir)
-    
+
+    # Change to the directory where the 
     os.chdir(params['trainingDir'])
 
-    # Set the SALTPATH
-    
-    os.environ['SALTPATH']=params['inputSurface']
+    # Set the SALTPATH    
+    os.environ['SALTPATH']=params['SALTPATH']
     print('SALT PATH is %s' %os.environ['SALTPATH'])
     
     # Part a) First training, withiout error snake
@@ -59,7 +64,7 @@ def train_SALT2(options):
     #      14 phases between -20 and +50, and 100 spline knots per phase = 14 x 100 =1400
     # iii) 4 polynomial coefficients in colour law: salt2_color_correction.dat
     #      
-    # Training list defined provided in trainingsample_snls_sdss_v5.list
+    # Training list is provided in params['trainingList']
 
     cmd=['pcafit',
          '-l',params['trainingList'],
@@ -252,10 +257,10 @@ def train_SALT2(options):
     
     # Create the new surface
     for directory in ['Instruments','MagSys']:        
-        sh.copytree(params['inputSurface']+'/'+directory,outputDir+directory)
+        sh.copytree(params['SALTPATH']+'/'+directory,outputDir+directory)
 
     for file in ['fitmodel.card']:
-        sh.copy(params['inputSurface']+'/'+file,outputDir+file)
+        sh.copy(params['SALTPATH']+'/'+file,outputDir+file)
 
     os.mkdir(outputDir+'salt2-4')
 
