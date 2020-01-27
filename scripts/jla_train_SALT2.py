@@ -49,7 +49,7 @@ def train_SALT2(options):
 
     # Set the SALTPATH    
     os.environ['SALTPATH']=params['SALTPATH']
-    print('SALT PATH is %s' %os.environ['SALTPATH'])
+    print('SALTPATH is %s' %os.environ['SALTPATH'])
     
     # Part a) First training, withiout error snake
 
@@ -77,7 +77,7 @@ def train_SALT2(options):
     # salt2_template_0.dat - M0
     # salt2_template_1.dat - M1
     # X0 * ( M0 + X1 * M1) * exp (C * CL(lambda))
-    
+
     sp.call(' '.join(cmd),shell=True)
 
     

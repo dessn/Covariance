@@ -81,20 +81,25 @@ def Fitz99(wave,R_V=3.1):
 
 class readSALTsurface:
     """A SALT surface"""
-    def __init__(self,f):
-        template_0=Table(numpy.genfromtxt(f+'/salt2_template_0.dat',dtype=[('phase',float),
+    def __init__(self,f, salt3Model):
+        if salt3Model:
+            prefix='salt3'
+        else:
+            prefix='salt2'
+
+        template_0=Table(numpy.genfromtxt(f+prefix+'_template_0.dat',dtype=[('phase',float),
                                                                            ('wave',float),
                                                                            ('flux',float)]))
 
-        template_1=Table(numpy.genfromtxt(f+'/salt2_template_1.dat',dtype=[('phase',float),
+        template_1=Table(numpy.genfromtxt(f+prefix+'_template_1.dat',dtype=[('phase',float),
                                                                            ('wave',float),
                                                                            ('flux',float)]))
 
-        self.colour_law=numpy.genfromtxt(f+'/salt2_color_correction.dat',dtype=[('coeff',float)],
+        self.colour_law=numpy.genfromtxt(f+prefix+'_color_correction.dat',dtype=[('coeff',float)],
                                     skip_header=1,skip_footer=3)
         
 
-        self.colour_law_error=numpy.genfromtxt(f+'/salt2_color_dispersion.dat',dtype=[('wave',float),
+        self.colour_law_error=numpy.genfromtxt(f+prefix+'_color_dispersion.dat',dtype=[('wave',float),
                                                                                 ('sig',float)], 
                                          skip_header=3)
         
@@ -141,8 +146,10 @@ def compareSALTsurfaces(surface):
     
     # -----------  Read in the SALT models -------------------
 
-    surface1=readSALTsurface(JLA.get_full_path(params['model1'])+'salt2-4/')
-    surface2=readSALTsurface(JLA.get_full_path(params['model2'])+'salt2-4/')
+    # If the SALT model is SALT3 - only for the second surface
+    
+    surface1=readSALTsurface(JLA.get_full_path(params['model1']),False)
+    surface2=readSALTsurface(JLA.get_full_path(params['model2']),options.salt3)
 
     name="%s-%s" % (surface1.surfaceName.split('/')[-3],surface2.surfaceName.split('/')[-3])
 
@@ -156,7 +163,7 @@ def compareSALTsurfaces(surface):
         ax1.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax1.text(7000,0.3,"C=0 x1=%2d" % x1)
         ax1b = ax1.twinx()
-        ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        #ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
         ax1b.plot([2000,9200],[0,0],'m--',marker=None)
         ax1b.set_ylim(-20,20)
         ax1b.tick_params(axis='y', labelcolor='r')
@@ -192,15 +199,21 @@ def compareSALTsurfaces(surface):
     constant=0.4 * numpy.log(10)
     fig3=plt.figure()
     ax3=fig3.add_subplot(111)
-    wave=surface1.template_0[options.phase]['wave']
-    wave_min=2800.
-    wave_max=7000.
+    wave1=surface1.template_0[options.phase]['wave']
+    wave2=surface2.template_0[options.phase]['wave']
+    wave1_min=2800.
+    wave1_max=7000.
+    wave2_min=2800.
+    wave2_max=7000.
     
-    wave_min_reduced=reduced_lambda(wave_min)
-    wave_max_reduced=reduced_lambda(wave_max)
+    wave1_min_reduced=reduced_lambda(wave1_min)
+    wave1_max_reduced=reduced_lambda(wave1_max)
+    wave2_min_reduced=reduced_lambda(wave2_min)
+    wave2_max_reduced=reduced_lambda(wave2_max)
     
     # See salt2extinction.h
-    reduced_wave=reduced_lambda(wave)
+    reduced_wave1=reduced_lambda(wave1)
+    reduced_wave2=reduced_lambda(wave2)
 
     # Model 1
     alpha1=1.0
@@ -209,21 +222,21 @@ def compareSALTsurfaces(surface):
     for coeff in surface1.colour_law['coeff']:
         alpha1-=coeff
 
-    p1=numpy.zeros(len(reduced_wave))
+    p1=numpy.zeros(len(reduced_wave1))
         
     # Compute derivatives for extrapolations
-    p1_derivative_min=derivative(alpha1,surface1,wave_min_reduced)
-    p1_derivative_max=derivative(alpha1,surface1,wave_max_reduced)
+    p1_derivative_min=derivative(alpha1,surface1,wave1_min_reduced)
+    p1_derivative_max=derivative(alpha1,surface1,wave1_max_reduced)
 
     # Compute colour law at the points of extrapolations
-    p1_wave_min_reduced=colourLaw(alpha1,surface1,wave_min_reduced)
-    p1_wave_max_reduced=colourLaw(alpha1,surface1,wave_max_reduced)
+    p1_wave_min_reduced=colourLaw(alpha1,surface1,wave1_min_reduced)
+    p1_wave_max_reduced=colourLaw(alpha1,surface1,wave1_max_reduced)
 
-    for index,rl in enumerate(reduced_wave):
-        if rl < wave_min_reduced:
-            p1[index]=p1_wave_min_reduced+p1_derivative_min*(rl-wave_min_reduced)
-        elif rl > wave_max_reduced:
-            p1[index]=p1_wave_max_reduced+p1_derivative_max*(rl-wave_max_reduced)
+    for index,rl in enumerate(reduced_wave1):
+        if rl < wave1_min_reduced:
+            p1[index]=p1_wave_min_reduced+p1_derivative_min*(rl-wave1_min_reduced)
+        elif rl > wave1_max_reduced:
+            p1[index]=p1_wave_max_reduced+p1_derivative_max*(rl-wave1_max_reduced)
         else:
             p1[index]=colourLaw(alpha1,surface1,rl)
     
@@ -233,21 +246,21 @@ def compareSALTsurfaces(surface):
     for coeff in surface2.colour_law['coeff']:
         alpha2-=coeff
 
-    p2=numpy.zeros(len(reduced_wave))
+    p2=numpy.zeros(len(reduced_wave2))
             
     # Compute derivatives for extrapolations
-    p2_derivative_min=derivative(alpha2,surface2,wave_min_reduced)
-    p2_derivative_max=derivative(alpha2,surface2,wave_max_reduced)
+    p2_derivative_min=derivative(alpha2,surface2,wave2_min_reduced)
+    p2_derivative_max=derivative(alpha2,surface2,wave2_max_reduced)
 
     # Compute colour law at the points of extrapolations
-    p2_wave_min_reduced=colourLaw(alpha2,surface2,wave_min_reduced)
-    p2_wave_max_reduced=colourLaw(alpha2,surface2,wave_max_reduced)
+    p2_wave_min_reduced=colourLaw(alpha2,surface2,wave2_min_reduced)
+    p2_wave_max_reduced=colourLaw(alpha2,surface2,wave2_max_reduced)
 
-    for index,rl in enumerate(reduced_wave):
-        if rl < wave_min_reduced:
-            p2[index]=p2_wave_min_reduced+p2_derivative_min*(rl-wave_min_reduced)
-        elif rl > wave_max_reduced:
-            p2[index]=p2_wave_max_reduced+p2_derivative_max*(rl-wave_max_reduced)
+    for index,rl in enumerate(reduced_wave2):
+        if rl < wave2_min_reduced:
+            p2[index]=p2_wave_min_reduced+p2_derivative_min*(rl-wave2_min_reduced)
+        elif rl > wave2_max_reduced:
+            p2[index]=p2_wave_max_reduced+p2_derivative_max*(rl-wave2_max_reduced)
         else:
             p2[index]=colourLaw(alpha2,surface2,rl)
     
@@ -259,25 +272,25 @@ def compareSALTsurfaces(surface):
     A1_wave=p1*C
     A1_wave_err_plus=(p1+surface1.colour_law_error['sig'])*C
     A1_wave_err_minus=(p1-surface1.colour_law_error['sig'])*C
-    ax3.fill_between(wave, A1_wave_err_plus,A1_wave_err_minus,alpha=0.4,label='model1+err')
-    ax3.plot(wave, A1_wave,label='model1')
+    ax3.fill_between(wave1, A1_wave_err_plus,A1_wave_err_minus,alpha=0.4,label='model1+err')
+    ax3.plot(wave1, A1_wave,label='model1')
     
     
     A2_wave=p2*C
-    ax3.plot(wave, A2_wave, label='model2')
+    ax3.plot(wave2, A2_wave, label='model2')
 
     # Plot CCM R_V=3.1
     E_BV=0.1
     R_V=3.1
-    a_wave=E_BV * R_V * CCM(wave, R_V)
+    a_wave=E_BV * R_V * CCM(wave1, R_V)
     a_B=E_BV * R_V * CCM(numpy.array([wave_B]),R_V)
-    ax3.plot(wave,a_wave-a_B,label='CCM R_V=3.1')
+    ax3.plot(wave1,a_wave-a_B,label='CCM R_V=3.1')
 
     #CCM R_V=1.0
     R_V=1.0
-    a_wave=E_BV * R_V * CCM(wave, R_V)
+    a_wave=E_BV * R_V * CCM(wave1, R_V)
     a_B=E_BV * R_V * CCM(numpy.array([wave_B]),R_V)
-    ax3.plot(wave,a_wave-a_B,label='CCM R_V=1.0')
+    ax3.plot(wave1,a_wave-a_B,label='CCM R_V=1.0')
 
     # F99 R_V=3.1
     
@@ -315,7 +328,7 @@ def compareSALTsurfaces(surface):
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
         ax2b = ax2.twinx()
         ax2b.plot([2000,9200],[0,0],'m--',marker=None)
-        ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        #ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
         ax2b.set_ylim(-20,20)
         ax2b.tick_params(axis='y', labelcolor='r')
 
@@ -340,6 +353,9 @@ if __name__ == '__main__':
 
     parser.add_option("-p", "--phase", dest="phase", default=0.0,
                       help="Lightcurve phase")
+
+    parser.add_option("-3", "--salt3", dest="salt3", default=False, action="store_true",
+                      help="SALT3 model")
 
     (options, args) = parser.parse_args()
 
