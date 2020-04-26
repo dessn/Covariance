@@ -5,6 +5,7 @@ import os
 import JLA_library as JLA
 import numpy as numpy
 from astropy.table import Table
+from scipy import interpolate
 
 # See wavelength.h
 wave_B=4302.57
@@ -95,6 +96,19 @@ class readSALTsurface:
                                                                            ('wave',float),
                                                                            ('flux',float)]))
 
+        salt2_lc_relative_variance_0=Table(numpy.genfromtxt(f+prefix+'_lc_relative_variance_0.dat',dtype=[('phase',float),
+                                                                           ('wave',float),
+                                                                           ('variance',float)]))
+
+        salt2_lc_relative_variance_1=Table(numpy.genfromtxt(f+prefix+'_lc_relative_variance_1.dat',dtype=[('phase',float),
+                                                                           ('wave',float),
+                                                                           ('variance',float)]))
+
+        salt2_lc_relative_covariance_01=Table(numpy.genfromtxt(f+prefix+'_lc_relative_covariance_01.dat',dtype=[('phase',float),
+                                                                           ('wave',float),
+                                                                           ('covariance',float)]))
+
+
         self.colour_law=numpy.genfromtxt(f+prefix+'_color_correction.dat',dtype=[('coeff',float)],
                                     skip_header=1,skip_footer=3)
         
@@ -104,12 +118,12 @@ class readSALTsurface:
                                          skip_header=3)
         
 
-        
-
-
         self.surfaceName=f
         self.template_0={}
         self.template_1={}
+        self.salt2_lc_relative_variance_0={}
+        self.salt2_lc_relative_variance_1={}
+        self.salt2_lc_relative_covariance_01={}
         self.colourlaw=[]
 
         for phase in numpy.unique(template_0['phase']):
@@ -119,6 +133,18 @@ class readSALTsurface:
         for phase in numpy.unique(template_1['phase']):
             selection=(template_1['phase']==phase)
             self.template_1['%s' % phase]=template_1[selection]['wave','flux']
+
+        for phase in numpy.unique(salt2_lc_relative_variance_0['phase']):
+            selection=(salt2_lc_relative_variance_0['phase']==phase)
+            self.salt2_lc_relative_variance_0['%s' % phase]=salt2_lc_relative_variance_0[selection]['wave','variance']
+
+        for phase in numpy.unique(salt2_lc_relative_variance_1['phase']):
+            selection=(salt2_lc_relative_variance_1['phase']==phase)
+            self.salt2_lc_relative_variance_1['%s' % phase]=salt2_lc_relative_variance_1[selection]['wave','variance']
+
+        for phase in numpy.unique(salt2_lc_relative_covariance_01['phase']):
+            selection=(salt2_lc_relative_covariance_01['phase']==phase)
+            self.salt2_lc_relative_covariance_01['%s' % phase]=salt2_lc_relative_covariance_01[selection]['wave','covariance']
 
         return
 
@@ -153,6 +179,13 @@ def compareSALTsurfaces(surface):
 
     name="%s-%s" % (surface1.surfaceName.split('/')[-3],surface2.surfaceName.split('/')[-3])
 
+    #print surface1.surfaceName.split('/')[-3]
+    #print surface2.surfaceName.split('/')[-3]
+
+    #print surface1.colour_law
+    #print surface2.colour_law
+
+    
     # -----------  Plot the surfaces ----------------------
     fig1=plt.figure()
     for axes,x1 in enumerate([-2,0,2]):
@@ -163,7 +196,18 @@ def compareSALTsurfaces(surface):
         ax1.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax1.text(7000,0.3,"C=0 x1=%2d" % x1)
         ax1b = ax1.twinx()
-        #ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        # Accounting for the fact that some models are sampled at twice the rate
+        if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
+            #flux1_int=interpolate.interp1d(surface1.template_0[options.phase]['wave'],flux1)(surface2.template_0[options.phase]['wave'])
+            #ax1b.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2)/flux1_int*100.,color='r')
+            #ax1.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2),color='g')
+            ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
+            ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
+
+        else:
+            ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+            ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
+
         ax1b.plot([2000,9200],[0,0],'m--',marker=None)
         ax1b.set_ylim(-20,20)
         ax1b.tick_params(axis='y', labelcolor='r')
@@ -269,11 +313,17 @@ def compareSALTsurfaces(surface):
     
     C=-0.1
 
-    A1_wave=p1*C
-    A1_wave_err_plus=(p1+surface1.colour_law_error['sig'])*C
-    A1_wave_err_minus=(p1-surface1.colour_law_error['sig'])*C
-    ax3.fill_between(wave1, A1_wave_err_plus,A1_wave_err_minus,alpha=0.4,label='model1+err')
-    ax3.plot(wave1, A1_wave,label='model1')
+    # Allowing for the fact that the SEDs might have finer sampling
+    if len(p1) > len(surface1.colour_law_error['sig']):
+        p1_s2=p1[0::2]
+    else:
+        p1_s2=p1
+
+    A1_wave=p1_s2*C
+    A1_wave_err_plus=(p1_s2+surface1.colour_law_error['sig'])*C
+    A1_wave_err_minus=(p1_s2-surface1.colour_law_error['sig'])*C
+    ax3.fill_between(surface1.colour_law_error['wave'], A1_wave_err_plus, A1_wave_err_minus, alpha=0.4,label='model1+err')
+    ax3.plot(surface1.colour_law_error['wave'], A1_wave,label='model1')
     
     
     A2_wave=p2*C
@@ -328,7 +378,15 @@ def compareSALTsurfaces(surface):
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
         ax2b = ax2.twinx()
         ax2b.plot([2000,9200],[0,0],'m--',marker=None)
-        #ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+        if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
+#            flux1_int=interpolate.interp1d(surface1.template_0[options.phase]['wave'],flux1)(surface2.template_0[options.phase]['wave'])
+#            ax2b.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2)/flux1_int*100.,color='r')
+#            ax2.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2),color='g')
+            ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
+            ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
+        else:
+            ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+            ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
         ax2b.set_ylim(-20,20)
         ax2b.tick_params(axis='y', labelcolor='r')
 
@@ -338,9 +396,52 @@ def compareSALTsurfaces(surface):
 
     plt.savefig("%s_colour_SED.png" % (name))
 
+    # Examine the differenece in the variance 
+    fig4=plt.figure()
+    ax4=fig4.add_subplot(3,1,1)
+    ax4.plot(surface1.salt2_lc_relative_variance_0[options.phase2]['wave'],surface1.salt2_lc_relative_variance_0[options.phase2]['variance'],color='b')
+    ax4.plot(surface2.salt2_lc_relative_variance_0[options.phase2]['wave'],surface2.salt2_lc_relative_variance_0[options.phase2]['variance'],color='k')
+    ax4b = ax4.twinx()
+    diff=surface1.salt2_lc_relative_variance_0[options.phase2]['variance']-surface2.salt2_lc_relative_variance_0[options.phase2]['variance']
+    ax4b.plot(surface1.salt2_lc_relative_variance_0[options.phase2]['wave'],diff/surface1.salt2_lc_relative_variance_0[options.phase2]['variance']*100,color='r')
+    ax4b.set_ylim(-20,20)
+    ax4b.tick_params(axis='y', labelcolor='r')
+
+    ax4.set_xlabel("wavelength ($\AA$)")
+    ax4.set_ylabel("var (comp 0)")
+    ax4b.set_ylabel('% Difference', color='r')
+
+    ax4=fig4.add_subplot(3,1,2)
+    ax4.plot(surface1.salt2_lc_relative_variance_1[options.phase2]['wave'],surface1.salt2_lc_relative_variance_1[options.phase2]['variance'],color='b')
+    ax4.plot(surface2.salt2_lc_relative_variance_1[options.phase2]['wave'],surface2.salt2_lc_relative_variance_1[options.phase2]['variance'],color='k')
+    ax4b = ax4.twinx()
+    diff=surface1.salt2_lc_relative_variance_1[options.phase2]['variance']-surface2.salt2_lc_relative_variance_1[options.phase2]['variance']
+    ax4b.plot(surface1.salt2_lc_relative_variance_1[options.phase2]['wave'],diff/surface1.salt2_lc_relative_variance_1[options.phase2]['variance']*100,color='r')
+    ax4b.set_ylim(-20,20)
+    ax4b.tick_params(axis='y', labelcolor='r')
+
+    ax4.set_xlabel("wavelength ($\AA$)")
+    ax4.set_ylabel("var (comp 1)")
+    ax4b.set_ylabel('% Difference', color='r')
+
+    ax4=fig4.add_subplot(3,1,3)
+    ax4.plot(surface1.salt2_lc_relative_covariance_01[options.phase2]['wave'],surface1.salt2_lc_relative_covariance_01[options.phase2]['covariance'],color='b')
+    ax4.plot(surface2.salt2_lc_relative_covariance_01[options.phase2]['wave'],surface2.salt2_lc_relative_covariance_01[options.phase2]['covariance'],color='k')
+    ax4b = ax4.twinx()
+    diff=surface1.salt2_lc_relative_covariance_01[options.phase2]['covariance']-surface2.salt2_lc_relative_covariance_01[options.phase2]['covariance']
+    ax4b.plot(surface1.salt2_lc_relative_covariance_01[options.phase2]['wave'],diff/surface1.salt2_lc_relative_covariance_01[options.phase2]['covariance']*100,color='r')
+    ax4b.set_ylim(-20,20)
+    ax4b.tick_params(axis='y', labelcolor='r')
+
+    ax4.set_xlabel("wavelength ($\AA$)")
+    ax4.set_ylabel("covar (comp 01)")
+    ax4b.set_ylabel('% Difference', color='r')
+
+    plt.savefig("%s_lc_variance.png" % (name))
+
+
     plt.show()
     plt.close()
-    
 
     return
 
@@ -352,6 +453,9 @@ if __name__ == '__main__':
                       help="Directories containing the SALT models")
 
     parser.add_option("-p", "--phase", dest="phase", default=0.0,
+                      help="Lightcurve phase")
+
+    parser.add_option("--phase2", dest="phase2", default=0.5,
                       help="Lightcurve phase")
 
     parser.add_option("-3", "--salt3", dest="salt3", default=False, action="store_true",

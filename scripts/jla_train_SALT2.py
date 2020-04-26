@@ -1,4 +1,3 @@
-
 """Python program to compute the C_cal matrices
 """
 
@@ -42,15 +41,25 @@ def train_SALT2(options):
     # It's name consists of the training sample used and the version of snpca used to do the training
     date=date=JLA.get_date()
     outputDir="/%s/data_%s_%s_%s/" % (params['outputDir'],date,params['trainingSample'],params['snpcaVersion'])
-    mkdir(outputDir)
-
+    try:
+        mkdir(outputDir)
+    except:
+        print("Cannot create %s" % outputDir)
+        
     # Change to the directory where the 
     os.chdir(params['trainingDir'])
 
     # Set the SALTPATH    
     os.environ['SALTPATH']=params['SALTPATH']
     print('SALTPATH is %s' %os.environ['SALTPATH'])
-    
+
+    # Add defaults to parameters
+    if 'sampling' not in params:
+        params['sampling']='10.0'
+
+    if 'wavelengthstep' not in params:
+        params['wavelength_step']='200.0'
+        
     # Part a) First training, withiout error snake
 
     # Step 1 - Train without the error snake
@@ -70,6 +79,7 @@ def train_SALT2(options):
          '-l',params['trainingList'],
          '-c','training_without_error_snake.conf',
          '-p','pca_1_opt1_final.list',
+         '-S',params['sampling'],
          '-d']
 
     # Will produce a SALT2 surface, inlcuding
@@ -78,8 +88,9 @@ def train_SALT2(options):
     # salt2_template_1.dat - M1
     # X0 * ( M0 + X1 * M1) * exp (C * CL(lambda))
 
+    raw_input("Pause 1")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
-
     
     # Step 2 - Compute uncertainties
     #
@@ -100,13 +111,16 @@ def train_SALT2(options):
     #   index for spec. calib [4070,5955]
 
     # pca_1_opt1_final.list
+
+    # Wavelength step used to sample the uncertainty
     
     cmd=['write_pca_uncertainties', 
          'pca_1_opt1_final.list',
          'full_weight_1.fits', 
          '2', 
          '1.0',
-         '1.0']
+         '1.0',
+         params['wavelengthstep']]
 
     # This produces the following files
     # covmat_1_with_constraints.fits
@@ -118,8 +132,10 @@ def train_SALT2(options):
     # salt2_spec_covariance_01.dat
     # salt2_spec_variance_1.dat
     
+    raw_input("Pause 2")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
-
+    
     # Step 3 - Compute error snake
     #
     # Uses the followng output from step 1
@@ -142,7 +158,10 @@ def train_SALT2(options):
     # salt2_lc_dispersion_scaling.dat
 
     
+    raw_input("Pause 3")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
+
 
     sh.copy('pca_1_opt1_final.list', 'pca_1_opt1_final_first.list')
     sh.copy('model_covmat_for_error_snake.fits','model_covmat_for_error_snake_first.fits')
@@ -170,6 +189,8 @@ def train_SALT2(options):
          '-p','pca_1_opt1_final_first.list',
          '-d']
          
+    raw_input("Pause 4")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
 
 
@@ -191,10 +212,13 @@ def train_SALT2(options):
          'full_weight_1.fits', 
          '2', 
          '1.0',
-         '1.0']
-
+         '1.0',
+         params['wavelengthstep']]
     
+    raw_input("Pause 5")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
+
 
     # Step 6 - Recompute error snake
     #
@@ -212,7 +236,10 @@ def train_SALT2(options):
          'full_weight_1.fits',
          'covmat_1_with_constraints.fits']
 
+    raw_input("Pause 6")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
+
 
     # Step 7 - Print out light curve residuals
     # 
@@ -231,7 +258,10 @@ def train_SALT2(options):
          'full_weight_1.fits',
          'covmat_1_with_constraints.fits']
          
+    raw_input("Pause 7")
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
+
 
     # Produces
     # lcresiduals.list
@@ -253,6 +283,7 @@ def train_SALT2(options):
          '-n',
          '3']
 
+    print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
     
     # Create the new surface
