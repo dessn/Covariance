@@ -1,4 +1,4 @@
-"""Python program to compute the C_cal matrices
+"""Python program calling code to train SALT2
 """
 
 from optparse import OptionParser
@@ -18,7 +18,7 @@ def mkdir(dir):
     try:
         os.mkdir(dir)
     except:
-        pass
+        print("Cannot create %s dir" % dir)
 
     return
 
@@ -36,15 +36,20 @@ def train_SALT2(options):
     for file in os.listdir(params['initDir']):
         sh.copy(params['initDir']+'/'+file,params['trainingDir'])
 
+    # Capture the pcafit version
+    cmd=['pcafit',"-v"]
+    proc = sp.Popen(cmd,stdout=sp.PIPE)
+    outs,errs = proc.communicate(proc)
+    pcafitVersion=outs.strip().replace(' ','_')
+
+    
     # Make the output directory
     # This is where we store the output surface.
     # It's name consists of the training sample used and the version of snpca used to do the training
     date=date=JLA.get_date()
-    outputDir="/%s/data_%s_%s_%s/" % (params['outputDir'],date,params['trainingSample'],params['snpcaVersion'])
-    try:
-        mkdir(outputDir)
-    except:
-        print("Cannot create %s" % outputDir)
+    outputDir="%s/snfit_data_%s_%s_%s/" % (params['outputDir'],date,params['trainingSample'],pcafitVersion)
+    mkdir(outputDir)
+    
         
     # Change to the directory where the 
     os.chdir(params['trainingDir'])
@@ -54,12 +59,23 @@ def train_SALT2(options):
     print('SALTPATH is %s' %os.environ['SALTPATH'])
 
     # Add defaults to parameters
-    if 'sampling' not in params:
-        params['sampling']='10.0'
+    if 'stepSurface' not in params:
+        params['stepSurface']='10.0'
 
-    if 'wavelengthstep' not in params:
-        params['wavelength_step']='200.0'
+    if 'stepVariance' not in params:
+        params['stepVariance']='200.0'
         
+    # Open a log file recording the setting used to train salt2
+
+    log=open("%s/training.log" % outputDir,'w')
+    log.write("# Training salt2 \n\n")
+    log.write("Date\t%s\n\n" % date)
+    log.write("# Parameters\n")
+    for key in params.keys():
+        log.write("%s\t%s\n" % (key,params[key]))
+    log.close()
+
+    
     # Part a) First training, withiout error snake
 
     # Step 1 - Train without the error snake
@@ -79,7 +95,7 @@ def train_SALT2(options):
          '-l',params['trainingList'],
          '-c','training_without_error_snake.conf',
          '-p','pca_1_opt1_final.list',
-         '-S',params['sampling'],
+         '-S',params['stepSurface'],
          '-d']
 
     # Will produce a SALT2 surface, inlcuding
@@ -88,8 +104,8 @@ def train_SALT2(options):
     # salt2_template_1.dat - M1
     # X0 * ( M0 + X1 * M1) * exp (C * CL(lambda))
 
-    raw_input("Pause 1")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 1")
     sp.call(' '.join(cmd),shell=True)
     
     # Step 2 - Compute uncertainties
@@ -120,7 +136,7 @@ def train_SALT2(options):
          '2', 
          '1.0',
          '1.0',
-         params['wavelengthstep']]
+         params['stepVariance']]
 
     # This produces the following files
     # covmat_1_with_constraints.fits
@@ -132,8 +148,8 @@ def train_SALT2(options):
     # salt2_spec_covariance_01.dat
     # salt2_spec_variance_1.dat
     
-    raw_input("Pause 2")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 2")
     sp.call(' '.join(cmd),shell=True)
     
     # Step 3 - Compute error snake
@@ -158,8 +174,8 @@ def train_SALT2(options):
     # salt2_lc_dispersion_scaling.dat
 
     
-    raw_input("Pause 3")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 3")
     sp.call(' '.join(cmd),shell=True)
 
 
@@ -187,10 +203,11 @@ def train_SALT2(options):
          '-l',params['trainingList'],
          '-c','training_with_error_snake.conf',
          '-p','pca_1_opt1_final_first.list',
+         '-S',params['stepSurface'],
          '-d']
          
-    raw_input("Pause 4")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 4")
     sp.call(' '.join(cmd),shell=True)
 
 
@@ -213,10 +230,10 @@ def train_SALT2(options):
          '2', 
          '1.0',
          '1.0',
-         params['wavelengthstep']]
+         params['stepSurface']]
     
-    raw_input("Pause 5")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 5")
     sp.call(' '.join(cmd),shell=True)
 
 
@@ -236,8 +253,8 @@ def train_SALT2(options):
          'full_weight_1.fits',
          'covmat_1_with_constraints.fits']
 
-    raw_input("Pause 6")
     print 'Executing: ',' '.join(cmd)
+    raw_input("Pause 6")
     sp.call(' '.join(cmd),shell=True)
 
 
@@ -258,7 +275,7 @@ def train_SALT2(options):
          'full_weight_1.fits',
          'covmat_1_with_constraints.fits']
          
-    raw_input("Pause 7")
+    #raw_input("Pause 7")
     print 'Executing: ',' '.join(cmd)
     sp.call(' '.join(cmd),shell=True)
 
@@ -324,7 +341,7 @@ def train_SALT2(options):
                 'salt2_spec_variance_0.dat']
 
     for inputFile,outputFile in zip(inputFiles,outputFiles):
-        sh.copy('%s' % (inputFile), "%s/salt2-4/%s" % (outputDir, outputFile))
+        sh.copy('%s' % (inputFile), "%ssalt2-4/%s" % (outputDir, outputFile))
 
 
 

@@ -195,26 +195,27 @@ def compareSALTsurfaces(surface):
         ax1.plot(surface1.template_0[options.phase]['wave'],flux1,color='b')
         ax1.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax1.text(7000,0.3,"C=0 x1=%2d" % x1)
-        ax1b = ax1.twinx()
-        # Accounting for the fact that some models are sampled at twice the rate
-        if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
-            #flux1_int=interpolate.interp1d(surface1.template_0[options.phase]['wave'],flux1)(surface2.template_0[options.phase]['wave'])
-            #ax1b.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2)/flux1_int*100.,color='r')
-            #ax1.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2),color='g')
-            ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
-            ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
+        if options.subtract:
+            ax1b = ax1.twinx()
+            # Accounting for the fact that some models are sampled at twice the rate
+            if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
+                #flux1_int=interpolate.interp1d(surface1.template_0[options.phase]['wave'],flux1)(surface2.template_0[options.phase]['wave'])
+                #ax1b.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2)/flux1_int*100.,color='r')
+                #ax1.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2),color='g')
+                ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
+                ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
 
-        else:
-            ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
-            ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
+            else:
+                ax1b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+                ax1.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
 
-        ax1b.plot([2000,9200],[0,0],'m--',marker=None)
-        ax1b.set_ylim(-20,20)
-        ax1b.tick_params(axis='y', labelcolor='r')
+            ax1b.plot([2000,9200],[0,0],'m--',marker=None)
+            ax1b.set_ylim(-20,20)
+            ax1b.tick_params(axis='y', labelcolor='r')
+            ax1b.set_ylabel('% Difference', color='r')
         
     ax1.set_xlabel("wavelength ($\AA$)")
     ax1.set_ylabel("flux density")
-    ax1b.set_ylabel('% Difference', color='r')
         
     plt.savefig("%s_SED.png" % (name))
 
@@ -376,25 +377,33 @@ def compareSALTsurfaces(surface):
         ax2.plot(surface1.template_0[options.phase]['wave'],flux1,color='b')
         ax2.plot(surface2.template_0[options.phase]['wave'],flux2,color='k')
         ax2.text(7000,0.3,"C=%4.1f x1=0.0" % C)
-        ax2b = ax2.twinx()
-        ax2b.plot([2000,9200],[0,0],'m--',marker=None)
-        if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
+        if options.subtract:
+            ax2b = ax2.twinx()
+            ax2b.plot([2000,9200],[0,0],'m--',marker=None)
+            if len(surface1.template_0[options.phase]['wave']) < len(surface2.template_0[options.phase]['wave']):
 #            flux1_int=interpolate.interp1d(surface1.template_0[options.phase]['wave'],flux1)(surface2.template_0[options.phase]['wave'])
 #            ax2b.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2)/flux1_int*100.,color='r')
 #            ax2.plot(surface2.template_0[options.phase]['wave'],(flux1_int-flux2),color='g')
-            ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
-            ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
-        else:
-            ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
-            ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
-        ax2b.set_ylim(-20,20)
-        ax2b.tick_params(axis='y', labelcolor='r')
+                ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2])/flux1*100.,color='r')
+                ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2[0::2]),color='g')
+            else:
+                ax2b.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2)/flux1*100.,color='r')
+                ax2.plot(surface1.template_0[options.phase]['wave'],(flux1-flux2),color='g')
+            ax2b.set_ylim(-20,20)
+            ax2b.tick_params(axis='y', labelcolor='r')
+            ax2b.set_ylabel('% Difference', color='r')
 
     ax2.set_xlabel("wavelength ($\AA$)")
     ax2.set_ylabel("flux density")
-    ax2b.set_ylabel('% Difference', color='r')
 
     plt.savefig("%s_colour_SED.png" % (name))
+
+
+    if not options.examineVariance:
+        plt.show()
+        plt.close()
+        return
+
 
     # Examine the differenece in the variance 
     fig4=plt.figure()
@@ -452,6 +461,9 @@ if __name__ == '__main__':
     parser.add_option("-c", "--config", dest="config", default="SALTmodels.config",
                       help="Directories containing the SALT models")
 
+    parser.add_option("-s", "--subtract", dest="subtract", default=True,action="store_false",
+                      help="Subtract one surface from another")
+
     parser.add_option("-p", "--phase", dest="phase", default=0.0,
                       help="Lightcurve phase")
 
@@ -460,6 +472,9 @@ if __name__ == '__main__':
 
     parser.add_option("-3", "--salt3", dest="salt3", default=False, action="store_true",
                       help="SALT3 model")
+
+    parser.add_option("-v", "--examineVariance", dest="examineVariance", default=False, action="store_true",
+                      help="Examine the LC variances")
 
     (options, args) = parser.parse_args()
 
