@@ -177,8 +177,11 @@ def compareSALTsurfaces(surface):
     surface1=readSALTsurface(JLA.get_full_path(params['model1']),False)
     surface2=readSALTsurface(JLA.get_full_path(params['model2']),options.salt3)
 
-    name="%s-%s" % (surface1.surfaceName.split('/')[-3],surface2.surfaceName.split('/')[-3])
-
+    if surface.prefix is None:
+        name="%s-%s" % (surface1.surfaceName.split('/')[-3],surface2.surfaceName.split('/')[-3])
+    else:
+        name=surface.prefix
+        
     #print surface1.surfaceName.split('/')[-3]
     #print surface2.surfaceName.split('/')[-3]
 
@@ -466,6 +469,9 @@ if __name__ == '__main__':
 
     parser.add_option("-p", "--phase", dest="phase", default=0.0,
                       help="Lightcurve phase")
+
+    parser.add_option("-P", "--prefix", dest="prefix", default=None,
+                      help="prefix for output file names")
 
     parser.add_option("--phase2", dest="phase2", default=0.5,
                       help="Lightcurve phase")
